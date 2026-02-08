@@ -1,0 +1,185 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_rounded"
+    android:padding="0dp">
+
+    <ImageView
+        android:id="@+id/imgWidgetBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/newsbg" />
+
+    <ImageView
+        android:id="@+id/viewOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="#70000000"
+        android:visibility="gone"
+        tools:visibility="visible"/>
+
+    <RelativeLayout
+        android:id="@+id/layoutNews"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="14dp"
+        android:visibility="visible"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="15dp"
+            android:layout_marginStart="10dp">
+
+            <FrameLayout
+                android:id="@+id/containerCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:layout_marginStart="8dp">
+
+                <ImageView
+                    android:id="@+id/imgCategoryBg"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/bg_rounded_white"
+                    android:scaleType="fitXY" />
+
+                <TextView
+                    android:id="@+id/txtCategoryTag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="Noticia"
+                    android:textColor="#FFFFFF"
+                    android:textSize="7sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.1"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="10dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="1dp" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/txtNewsTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CARGANDO..."
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:maxLines="3"
+                android:ellipsize="end"
+                android:textAllCaps="true"
+                android:lineSpacingMultiplier="0.9"
+                android:layout_marginStart="10dp"
+                android:shadowColor="#CC000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0"
+                android:layout_marginTop="-3dp"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="12sp"
+                app:autoSizeMaxTextSize="17sp"
+                app:autoSizeStepGranularity="2sp"/>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginBottom="10dp"
+            android:layout_marginEnd="10dp">
+
+            <ImageView
+                android:id="@+id/btnRefresh"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_refresh"
+                app:tint="#FFFFFF"
+                android:visibility="visible" />
+
+            <ProgressBar
+                android:id="@+id/loadingSpinner"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:indeterminate="true"
+                android:indeterminateTint="#FFFFFF"
+                android:visibility="gone" />
+        </FrameLayout>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layoutClock"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        tools:visibility="gone"
+        android:layout_marginStart="10dp">
+
+        <TextClock
+            android:id="@+id/clockBig"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="h:mm"
+            android:format24Hour="kk:mm"
+            android:textColor="#FFFFFF"
+            android:textSize="80sp"
+            android:textStyle="bold"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="80sp"
+            android:autoSizeMaxTextSize="120sp"
+            android:autoSizeStepGranularity="1sp"
+            android:layout_centerVertical="true"
+            android:shadowColor="#80000000"
+            android:shadowDx="4"
+            android:shadowDy="4"
+            android:shadowRadius="0"
+            tools:text="08:14"/>
+
+        <LinearLayout
+            android:id="@+id/containerAlarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/clockBig"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="-10dp"
+            android:layout_marginStart="8dp">
+
+            <ImageView
+                android:layout_width="17dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_alarm"
+                app:tint="#DDFFFFFF"/>
+
+            <TextView
+                android:id="@+id/txtNextAlarm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sin alarmas"
+                android:textColor="#DDFFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginStart="6dp"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0"
+                tools:text="7:00 am"/>
+        </LinearLayout>
+    </RelativeLayout>
+</FrameLayout>

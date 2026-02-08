@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+       <shortcut
+        android:shortcutId="search"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_search"
+        android:shortcutShortLabel="@string/shortcut_search_short"
+        android:shortcutLongLabel="@string/shortcut_search_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ketchupstudios.Switchstickerapp"
+            android:targetClass="com.ketchupstudios.Switchstickerapp.SearchActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="id_wallet"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_id_wallet_short"
+        android:shortcutLongLabel="@string/shortcut_id_wallet_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ketchupstudios.Switchstickerapp"
+            android:targetClass="com.ketchupstudios.Switchstickerapp.WalletHomeActivity" />
+    </shortcut>
+
+
+    <shortcut
+        android:shortcutId="widgets"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_widgets_short"
+        android:shortcutLongLabel="@string/shortcut_widgets_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ketchupstudios.Switchstickerapp"
+            android:targetClass="com.ketchupstudios.Switchstickerapp.FullListActivity">
+            <extra android:name="TYPE" android:value="widgets" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="wallpapers"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_walls_short"
+        android:shortcutLongLabel="@string/shortcut_walls_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ketchupstudios.Switchstickerapp"
+            android:targetClass="com.ketchupstudios.Switchstickerapp.FullListActivity">
+            <extra android:name="TYPE" android:value="wallpapers" />
+        </intent>
+    </shortcut>
+
+</shortcuts>

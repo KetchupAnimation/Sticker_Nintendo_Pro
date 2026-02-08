@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F0F0F0">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="50dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ID Wallet"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:layout_centerVertical="true"/>
+
+                <ImageView
+                    android:id="@+id/btnFriendsList"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_contac"
+                    android:padding="8dp"
+                    app:tint="#333333"
+                    android:layout_alignParentEnd="true"
+                    android:elevation="4dp"
+                    android:layout_centerVertical="true"/>
+            </RelativeLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:layout_constraintDimensionRatio="H,576:417"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent">
+
+                    <FrameLayout
+                        android:id="@+id/cardContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:id="@+id/imgCardBg"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="fitXY"
+                            android:background="#ca3537" />
+
+                        <RelativeLayout
+                            android:id="@+id/containerFront"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="visible"
+                            tools:visibility="visible">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_alignParentBottom="true"
+                                android:paddingHorizontal="20dp"
+                                android:paddingBottom="12dp">
+
+                                <FrameLayout
+                                    android:layout_width="45dp"
+                                    android:layout_height="55dp"
+                                    android:layout_marginBottom="5dp">
+
+                                    <ImageView
+                                        android:id="@+id/imgFavGameFront"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_marginBottom="12dp"
+                                        android:layout_marginTop="2dp"
+                                        android:layout_marginHorizontal="2dp"
+                                        android:padding="0dp"
+                                        android:scaleType="centerCrop"
+                                        android:background="#33000000"/>
+
+                                    <ImageView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:src="@drawable/bg_switch_slot_border"
+                                        android:scaleType="fitXY"/>
+                                </FrameLayout>
+
+                                <TextView
+                                    android:id="@+id/txtCardName"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="USER NAME"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#FFFFFF"
+                                    android:shadowColor="#80000000"
+                                    android:shadowDx="2"
+                                    android:shadowDy="2"
+                                    android:shadowRadius="4"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="FRIEND CODE:"
+                                    android:textSize="10sp"
+                                    android:textColor="#DDFFFFFF"
+                                    android:layout_marginTop="4dp"/>
+                                <TextView
+                                    android:id="@+id/txtCardCode"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="SW-0000-0000-0000"
+                                    android:textSize="24sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#FFFFFF"
+                                    android:fontFamily="monospace"
+                                    android:letterSpacing="0.05"
+                                    android:shadowColor="#80000000"
+                                    android:shadowDx="2"
+                                    android:shadowDy="2"
+                                    android:shadowRadius="4"/>
+                                <TextView
+                                    android:id="@+id/txtCardArtist"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Art by: Nintendo"
+                                    android:textSize="9sp"
+                                    android:textStyle="italic"
+                                    android:textColor="#CCFFFFFF"
+                                    android:layout_marginTop="8dp"
+                                    android:shadowColor="#80000000"
+                                    android:shadowDx="1"
+                                    android:shadowDy="1"
+                                    android:shadowRadius="2"/>
+                            </LinearLayout>
+
+                            <ImageView
+                                android:id="@+id/iconSwitch"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:src="@drawable/nintendo_switch_icon"
+                                android:layout_alignParentBottom="true"
+                                android:layout_alignParentEnd="true"
+                                android:layout_margin="15dp"
+                                android:alpha="0.9"/>
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:id="@+id/containerBack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone"
+                            tools:visibility="gone"
+                            android:padding="16dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_centerInParent="true"
+                                android:gravity="center_horizontal">
+
+                                <TextView
+                                    android:id="@+id/lblTop3"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:textSize="0sp"
+                                    android:visibility="invisible"/>
+
+                                <LinearLayout
+                                    android:id="@+id/gamesContainer"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="130dp"
+                                    android:layout_marginTop="30dp"
+                                    android:orientation="horizontal"
+                                    android:gravity="center"
+                                    android:weightSum="3"
+                                    android:clipChildren="false">
+
+                                    <FrameLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="6dp">
+                                        <ImageView
+                                            android:id="@+id/gameSlot1"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:layout_marginTop="8dp"
+                                            android:layout_marginStart="5dp"
+                                            android:layout_marginEnd="5dp"
+                                            android:layout_marginBottom="31dp"
+                                            android:scaleType="centerCrop"
+                                            android:background="#33000000"/>
+                                        <ImageView
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/bg_switch_slot_border"
+                                            android:scaleType="fitXY"/>
+                                    </FrameLayout>
+
+                                    <FrameLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="6dp">
+                                        <ImageView
+                                            android:id="@+id/gameSlot2"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:layout_marginTop="8dp"
+                                            android:layout_marginStart="5dp"
+                                            android:layout_marginEnd="5dp"
+                                            android:layout_marginBottom="31dp"
+                                            android:scaleType="centerCrop"
+                                            android:background="#33000000"/>
+                                        <ImageView
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/bg_switch_slot_border"
+                                            android:scaleType="fitXY"/>
+                                    </FrameLayout>
+
+                                    <FrameLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="6dp">
+                                        <ImageView
+                                            android:id="@+id/gameSlot3"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:layout_marginTop="8dp"
+                                            android:layout_marginStart="5dp"
+                                            android:layout_marginEnd="5dp"
+                                            android:layout_marginBottom="31dp"
+                                            android:scaleType="centerCrop"
+                                            android:background="#33000000"/>
+                                        <ImageView
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/bg_switch_slot_border"
+                                            android:scaleType="fitXY"/>
+                                    </FrameLayout>
+                                </LinearLayout>
+
+                                <Button
+                                    android:id="@+id/btnLogin"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Conectar Cuenta Google"
+                                    android:layout_marginTop="15dp"/>
+                            </LinearLayout>
+                        </RelativeLayout>
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/carddesing"
+                            android:scaleType="fitXY"
+                            android:alpha="1.0" />
+
+                        <ImageView
+                            android:id="@+id/btnFlip"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_flip"
+                            android:layout_gravity="top|end"
+                            android:layout_margin="12dp"
+                            app:tint="#FFFFFF"
+                            android:alpha="0.7"/>
+
+                    </FrameLayout>
+                </androidx.cardview.widget.CardView>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nickname">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="15"
+                    android:inputType="textPersonName"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Switch Friend Code (SW-...)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="17"
+                    android:inputType="textVisiblePassword"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="15dp">
+
+                <Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:text="Save Data"
+                    android:textStyle="bold"
+                    android:textSize="16sp"/>
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="15dp"
+                android:layout_marginTop="25dp"
+                android:src="@drawable/ic_zigzag"
+                app:tint="#CCCCCC"
+                android:scaleType="centerCrop"
+                android:alpha="0.5"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select Card Style:"
+                android:layout_marginTop="20dp"
+                android:textStyle="bold"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvIdThemes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

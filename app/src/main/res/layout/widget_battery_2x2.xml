@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="0dp">
+
+    <ImageView
+        android:id="@+id/imgBgSolid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/bg_widget_rounded"
+        android:scaleType="fitXY" />
+
+    <LinearLayout
+        android:id="@+id/textContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"> <TextView
+        android:id="@+id/lblBatteryTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="% BATTERY"
+        android:textSize="8sp"
+        android:textStyle="normal"
+        android:textAllCaps="true"
+        android:textColor="#FFFFFF"
+        android:layout_marginTop="10dp"
+        android:fontFamily="sans-serif-medium"
+        android:shadowColor="#40000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="2"
+        android:letterSpacing="0.07"/>
+
+        <TextView
+            android:id="@+id/txtBatteryLevel"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:text="50"
+            android:maxLines="1"
+            android:gravity="center"
+
+            android:autoSizeTextType="uniform"
+            android:autoSizeMaxTextSize="120sp"
+            android:autoSizeMinTextSize="40sp"
+            android:autoSizeStepGranularity="2sp"
+
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:layout_marginTop="-10dp"
+            android:shadowColor="#40000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="3"/>
+
+        <ImageView
+            android:id="@+id/imgChargingStatus"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_charging_bolt"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtApplyTheme"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="30dp"
+        android:text="Apply a theme"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:padding="0dp"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/imgCharacter"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="bottom|center_horizontal"
+        android:scaleType="centerCrop"
+        android:paddingTop="13dp"
+        android:paddingBottom="0dp"
+        android:src="@android:color/transparent" />
+
+</FrameLayout>

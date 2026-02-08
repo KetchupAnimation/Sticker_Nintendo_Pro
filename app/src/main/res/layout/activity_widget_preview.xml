@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:fitsSystemWindows="false">
+
+    <ImageView
+        android:id="@+id/imgBackgroundLayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.8"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="20dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/buttonsContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingTop="60dp">
+
+            <FrameLayout
+                android:id="@+id/widgetContainer"
+                android:layout_width="320dp"
+                android:layout_height="160dp"
+                android:layout_marginBottom="24dp">
+                <ImageView
+                    android:id="@+id/imgWidgetLayer"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:background="@android:color/transparent"/>
+                <ImageView
+                    android:id="@+id/imgOverlayLayer"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_overlay_mock"/>
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/calendarContainer"
+                android:layout_width="320dp"
+                android:layout_height="160dp"
+                android:layout_marginBottom="24dp">
+                <ImageView
+                    android:id="@+id/imgWidgetLayer2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:background="@android:color/transparent"/>
+                <ImageView
+                    android:id="@+id/imgOverlayLayer2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_calendar_mock"/>
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/clockContainer"
+                android:layout_width="320dp"
+                android:layout_height="160dp"
+                android:layout_marginBottom="24dp">
+                <ImageView
+                    android:id="@+id/imgWidgetLayer3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:background="@android:color/transparent"/>
+                <ImageView
+                    android:id="@+id/imgOverlayLayer3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/widget_clock_mock"/>
+            </FrameLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/buttonsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="40dp"
+        android:paddingBottom="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/bannerContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button
+            android:id="@+id/btnToggleFavorite"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add to favorites"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/boton_redondo_verde"
+            app:backgroundTint="#FFD700"
+            android:textAllCaps="false"
+            android:stateListAnimator="@null"
+            android:elevation="0dp"
+            android:paddingVertical="14dp"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
+            android:id="@+id/btnPinWidget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add to Home Screen"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:background="@drawable/boton_redondo_verde"
+            app:backgroundTint="#FFFFFF"
+            android:textAllCaps="false"
+            android:stateListAnimator="@null"
+            android:elevation="0dp"
+            android:paddingVertical="14dp"/>
+
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/bannerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:background="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

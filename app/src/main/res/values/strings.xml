@@ -1,0 +1,66 @@
+<resources>
+    <string name="app_name">Sticker Nintendo Pro</string>
+    <string name="widget_name_calendar_small">Calendario: Simple (2x2)</string>
+    <string name="widget_name_calendar_wide">Calendario: Agenda (4x2)</string>
+    <string name="widget_name_weather_small">Clima: Cuadrado (2x2)</string>
+    <string name="widget_name_weather_banner">Clima: Banner (4x1)</string>
+    <string name="widget_name_weather_wide">Clima: Extendido (4x2)</string>
+    <string name="widget_hybrid_name">Reloj y Nintenderos: Híbrido (4x2)</string>
+    <string name="widget_news_name">Nintenderos: Extendido (4x2)</string>
+    <string name="widget_clock_name">Reloj: Alarmas y Hora (4x2)</string>
+
+    <string name="shortcut_search_short">Buscar</string>
+    <string name="shortcut_search_long">Buscar Stickers</string>
+
+    <string name="shortcut_widgets_short">Widgets</string>
+    <string name="shortcut_widgets_long">Galería de Widgets</string>
+
+    <string name="shortcut_walls_short">Fondos</string>
+    <string name="shortcut_walls_long">Wallpapers</string>
+    <string name="shortcut_id_wallet_short">ID Wallet</string>
+    <string name="shortcut_id_wallet_long">Open My Friend Card</string>
+
+    <string name="default_web_client_id">872562570736-kibsqv41fpegiidg4qtqej1gtqn2t63d.apps.googleusercontent.com</string>
+
+    <string name="witty_title">Update Status</string>
+    <string name="witty_subtitle">What\'s your game plan?</string>
+    <string name="status_ready">Ready to Play</string>
+    <string name="btn_save_status">Post Status</string>
+    <string name="status_updated_msg">Status updated!</string>
+
+    <string-array name="witty_status_titles">
+        <item>Ready to Play</item>
+        <item>Looking for Group</item>
+        <item>Working for Grizzco</item>
+        <item>Turf War</item>
+        <item>Let\'s Trade!</item>
+        <item>Tera Raids</item>
+        <item>On the Track</item>
+        <item>1v1 Duels</item>
+        <item>Visit my Island</item>
+        <item>Stealing Stars</item>
+        <item>Hunting</item>
+        <item>Retro Gaming</item>
+    </string-array>
+
+    <string-array name="witty_status_games">
+        <item></item> <item>General</item>
+        <item>Splatoon 2 - Splatoon 3</item>
+        <item>Splatoon 2 - Splatoon 3</item>
+        <item>Pokémon</item>
+        <item>Pokémon Scarlet/Violet</item>
+        <item>Mario Kart 8 Deluxe</item>
+        <item>Super Smash Bros. Ultimate</item>
+        <item>Animal Crossing: NH</item>
+        <item>Mario Party</item>
+        <item>Monster Hunter</item>
+        <item>NES - SNES - N64 - GBA</item>
+    </string-array>
+
+    <string name="friend_card_send_reaction_label">SEND REACTION (1/WEEK)</string>
+    <string name="friend_card_friend_code_label">FRIEND CODE:</string>
+    <string name="friend_card_no_favorites">No favorites yet</string>
+    <string name="toast_copied">Copied!</string>
+    <string name="toast_sticker_sent_cooldown">Sticker Sent! (Wait 7 days for next)</string>
+
+</resources>

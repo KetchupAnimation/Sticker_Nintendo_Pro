@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="witty_title">Actualizar Estado</string>
+    <string name="witty_subtitle">¿Cuál es tu plan?</string>
+    <string name="status_ready">Listo para jugar</string>
+    <string name="btn_save_status">Publicar Estado</string>
+    <string name="status_updated_msg">¡Estado actualizado!</string>
+
+    <string-array name="witty_status_titles">
+        <item>Listo para jugar</item>
+        <item>Busco Grupo</item>
+        <item>Trabajando en Donoso</item>
+        <item>Pintando Zona</item>
+        <item>¿Intercambiamos?</item>
+        <item>Tera Incursiones</item>
+        <item>En la pista</item>
+        <item>Duelos 1 vs 1</item>
+        <item>Te invito a mi isla</item>
+        <item>Robando Estrellas</item>
+        <item>De Cacería</item>
+        <item>Juegos Retro</item>
+    </string-array>
+
+    <string-array name="witty_status_games">
+        <item></item> <item>General</item>
+        <item>Splatoon 2 - Splatoon 3</item>
+        <item>Splatoon 2 - Splatoon 3</item>
+        <item>Pokémon</item>
+        <item>Pokémon Escarlata/Púrpura</item>
+        <item>Mario Kart 8 Deluxe</item>
+        <item>Super Smash Bros. Ultimate</item>
+        <item>Animal Crossing: NH</item>
+        <item>Mario Party</item>
+        <item>Monster Hunter</item>
+        <item>NES - SNES - N64 - GBA</item>
+    </string-array>
+
+
+    <string name="friend_card_send_reaction_label">ENVIAR REACCIÓN (1/SEM)</string>
+    <string name="friend_card_friend_code_label">CÓDIGO DE AMIGO:</string>
+    <string name="friend_card_no_favorites">Sin favoritos aún</string>
+    <string name="toast_copied">¡Copiado!</string>
+    <string name="toast_sticker_sent_cooldown">¡Sticker Enviado! (Espera 7 días para otro)</string>
+</resources>

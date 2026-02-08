@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "872562570736",
+    "project_id": "switchstickerapp",
+    "storage_bucket": "switchstickerapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:872562570736:android:5a204986177b1641b09935",
+        "android_client_info": {
+          "package_name": "com.ketchupstudios.Switchstickerapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "872562570736-o47om8ucau7v5avc3kn4gb70sj3iat3s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ketchupstudios.Switchstickerapp",
+            "certificate_hash": "b2d00a1027dd3288fccd6cf412f7ac117bdce41d"
+          }
+        },
+        {
+          "client_id": "872562570736-kibsqv41fpegiidg4qtqej1gtqn2t63d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjudnIdErbzvighHUh0ggNc29O56uJ8JQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "872562570736-kibsqv41fpegiidg4qtqej1gtqn2t63d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

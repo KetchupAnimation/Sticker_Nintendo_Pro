@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/rootContainer">
+
+    <ImageView
+        android:id="@+id/widgetBgImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_sheet_top" />
+
+    <TextView
+        android:id="@+id/txt_loading_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="Cargando..."
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:shadowColor="#80000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:visibility="visible"
+        tools:visibility="gone"/>
+
+    <RelativeLayout
+        android:id="@+id/layout_data_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp">
+
+            <TextView
+                android:id="@+id/widgetTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00°"
+
+                android:textSize="80sp"
+
+                android:includeFontPadding="false"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:shadowColor="#80000000"
+                android:shadowDx="4"
+                android:shadowDy="4"
+                android:shadowRadius="0" />
+
+            <TextView
+                android:id="@+id/widgetCity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ubicación"
+
+                android:textSize="24sp"
+
+                android:maxLines="1"
+                android:ellipsize="end"
+
+                android:paddingBottom="5dp"
+                android:paddingTop="2dp"
+
+                android:textStyle="normal"
+                android:textColor="#FFFFFF"
+                android:layout_marginTop="-15dp"
+                android:includeFontPadding="false"
+                android:layout_marginStart="8dp"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true">
+
+            <TextView
+                android:id="@+id/widgetDesc"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:text="Nublado"
+
+                android:textSize="25sp"
+
+                android:gravity="end"
+                android:maxLines="1"
+                android:ellipsize="end"
+
+                android:paddingBottom="6dp"
+                android:paddingTop="2dp"
+
+                android:textStyle="bold|italic"
+                android:textColor="#FFFFFF"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0"/>
+
+            <TextView
+                android:id="@+id/widgetMinMax"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="↑21° / ↓16°"
+
+                android:textSize="22sp"
+
+                android:maxLines="1"
+                android:layout_marginTop="-7dp"
+                android:textStyle="bold"
+                android:textColor="#EEFFFFFF"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0"/>
+        </LinearLayout>
+
+    </RelativeLayout>
+</RelativeLayout>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+    <ImageView
+        android:id="@+id/widgetBgImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_sheet_top" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="20dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_centerVertical="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="10dp"            android:clipChildren="false">
+            <TextView
+                android:id="@+id/txtMonth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MARZO"
+                android:textSize="20sp"
+                android:textStyle="normal"
+                android:textColor="#FFFFFF"
+                android:textAllCaps="true"
+                android:layout_marginStart="8dp"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0"/>
+
+            <TextView
+                android:id="@+id/txtDay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10"
+                android:textSize="80sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:includeFontPadding="false"
+                android:layout_marginTop="-15dp"
+                android:shadowColor="#80000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="0"/>
+            <LinearLayout
+                android:id="@+id/layoutUserEvent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="-13dp"
+                android:clickable="true"
+                android:clipChildren="false">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_calendar"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="6dp"
+                    android:tint="#FFFFFF"/>
+
+                <TextView
+                    android:id="@+id/txtUserEvent"
+                    android:layout_width="190dp"
+                    android:layout_height="wrap_content"
+                    android:text="Cargando..."
+
+                    android:maxLines="2"
+                    android:ellipsize="end"
+
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="12sp"
+                    android:autoSizeMaxTextSize="18sp"
+                    android:autoSizeStepGranularity="1sp"
+
+                    android:includeFontPadding="true"
+                    android:paddingBottom="12dp"
+                    android:paddingTop="2dp"
+
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginStart="5dp"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="2"
+                    android:shadowDy="2"
+                    android:shadowRadius="0"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtSpecialEvent"
+            android:layout_width="150dp"
+            android:layout_height="400dp"
+            android:text="Frosty Fest dia 1"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:gravity="bottom|end"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="4dp"
+
+            android:maxLines="5"
+            android:ellipsize="end"
+            android:lineSpacingMultiplier="1.0"
+
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="20sp"
+            android:autoSizeMaxTextSize="30sp"
+            android:autoSizeStepGranularity="1sp"
+
+            android:paddingBottom="4dp"
+
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:shadowColor="#80000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="0"
+            android:visibility="gone"
+            tools:visibility="visible"/>
+    </RelativeLayout>
+</RelativeLayout>
