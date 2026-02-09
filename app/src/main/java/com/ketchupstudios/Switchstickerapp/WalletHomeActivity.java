@@ -999,7 +999,21 @@ public class WalletHomeActivity extends AppCompatActivity {
 
     private void actualizarMonedasNube(int saldo) {
         if (mAuth.getCurrentUser() != null) {
-            db.collection("users").document(mAuth.getCurrentUser().getUid()).update("coins", saldo);
+            // 1. Guardamos bandera de "pendiente" por seguridad antes de intentar
+            getSharedPreferences("UserRewards", MODE_PRIVATE).edit().putBoolean("needs_sync", true).apply();
+
+            db.collection("users").document(mAuth.getCurrentUser().getUid())
+                    .update("coins", saldo)
+                    .addOnSuccessListener(aVoid -> {
+                        // 2. Si hubo éxito, quitamos la bandera
+                        getSharedPreferences("UserRewards", MODE_PRIVATE).edit().putBoolean("needs_sync", false).apply();
+                    })
+                    .addOnFailureListener(e -> {
+                        // 3. Si falla, la bandera se queda en true para que MainActivity reintente luego
+                    });
+        } else {
+            // Si no hay usuario, marcamos para subir luego
+            getSharedPreferences("UserRewards", MODE_PRIVATE).edit().putBoolean("needs_sync", true).apply();
         }
     }
 

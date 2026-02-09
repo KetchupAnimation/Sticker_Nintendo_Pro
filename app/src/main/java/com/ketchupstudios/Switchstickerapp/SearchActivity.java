@@ -158,7 +158,33 @@ public class SearchActivity extends AppCompatActivity {
                 ((Button) btnUse).setText("USE " + cost + " COINS");
             }
 
-            btnUse.setOnClickListener(v -> { dialog.dismiss(); if (onUseCoins != null) onUseCoins.run(); });
+            btnUse.setOnClickListener(v -> {
+                dialog.dismiss();
+
+                // --- INICIO CÓDIGO SENSORIAL ---
+                try {
+                    // 1. SONIDO
+                    android.media.MediaPlayer mp = android.media.MediaPlayer.create(this, R.raw.coin);
+                    if (mp != null) {
+                        mp.setOnCompletionListener(android.media.MediaPlayer::release);
+                        mp.start();
+                    }
+                    // 2. VIBRACIÓN
+                    android.os.Vibrator vibrator = (android.os.Vibrator) getSystemService(android.content.Context.VIBRATOR_SERVICE);
+                    if (vibrator != null) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            vibrator.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+                        } else {
+                            vibrator.vibrate(50);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                // --------------------------------
+
+                if (onUseCoins != null) onUseCoins.run();
+            });
             btnAd.setOnClickListener(v -> { dialog.dismiss(); if (onWatchAd != null) onWatchAd.run(); });
 
             dialog.show();
