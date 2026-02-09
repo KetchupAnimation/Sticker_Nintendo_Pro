@@ -221,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
         if (esPrimeraVez) {
             // Le damos 3 monedas
             prefs.edit()
-                    .putInt("skip_tickets", 999)
+                    .putInt("skip_tickets", 9)
                     .putBoolean("first_time_coins", false) // Marcamos que ya recibió el regalo
                     .apply();
 
