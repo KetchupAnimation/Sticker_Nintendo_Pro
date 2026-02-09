@@ -135,4 +135,10 @@ public class Config {
     public static List<LimitedEvent> limitedEvents = new ArrayList<>();
     // --- AQUÍ LA PONEMOS ---
     public static java.util.List<Reaction> reactions = new java.util.ArrayList<>();
+
+
+    public static java.util.Map<Integer, String> widgetStatusMap = new java.util.HashMap<>();
+    public static int totalWidgetsCount = 20;
+    public static boolean dataLoaded = false; // <-- ¡Esta es la más importante!
+    public static Promo promoData = null;
 }

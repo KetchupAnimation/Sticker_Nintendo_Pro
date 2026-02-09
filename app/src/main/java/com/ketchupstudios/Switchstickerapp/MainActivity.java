@@ -322,7 +322,20 @@ public class MainActivity extends AppCompatActivity {
             new Thread(this::descargarJSON).start();
         });
 
-        new Thread(this::descargarJSON).start();
+        // --- AQUÍ EMPIEZA EL CAMBIO (Reemplazamos la carga automática) ---
+
+        if (Config.dataLoaded && !Config.packs.isEmpty()) {
+            // 1. SI YA TENEMOS DATOS: Usamos la memoria (Carga Instantánea)
+            progressBar.setVisibility(View.GONE);
+
+            // NOTA: Asegúrate de haber agregado 'promoData' a Config (ver abajo)
+            prepararVistaHome(Config.promoData, Config.totalWidgetsCount, Config.widgetStatusMap);
+
+        } else {
+            // 2. SI NO TENEMOS DATOS: Descargamos normal
+            new Thread(this::descargarJSON).start();
+        }
+
         programarActualizacionAutomatica();
 
         resetNavIcons();
@@ -951,6 +964,24 @@ public class MainActivity extends AppCompatActivity {
             }
 
             final int finalTotalCount = tempCount;
+            Config.totalWidgetsCount = tempCount; // <--- AGREGA ESTO
+
+// final Map<Integer, String> finalStatusMap = widgetStatusMap; <--- ESTO YA LO TIENES
+            Config.widgetStatusMap.putAll(widgetStatusMap); // <--- AGREGA ESTO
+            Config.promoData = promoData;
+            Config.widgetStatusMap.putAll(widgetStatusMap);
+            Config.totalWidgetsCount = tempCount;
+            Config.dataLoaded = true; // <--- ¡MUY IMPORTANTE! Marcamos que ya tenemos datos
+
+            runOnUiThread(() -> {
+                progressBar.setVisibility(View.GONE);
+                verificarActualizacionForzada();
+                checkAndShowNews();
+                // Usa las variables de Config en lugar de las locales
+                prepararVistaHome(finalPromo, Config.totalWidgetsCount, Config.widgetStatusMap);
+            });
+
+
             final Map<Integer, String> finalStatusMap = widgetStatusMap;
 
             // --- NUEVO: PARSEAR REACCIONES ---
@@ -1193,26 +1224,28 @@ public class MainActivity extends AppCompatActivity {
 
         if (!isHomeInitialized) {
             // Solo creamos y animamos la primera vez
-            if (!finalHomeWidgets.isEmpty()) {
-                widgetAdapter = new WidgetGalleryAdapter(MainActivity.this, finalHomeWidgets, true, widgetStatusMap);
-                rvWidgetGallery.setLayoutAnimation(animation);
-                rvWidgetGallery.setAdapter(widgetAdapter);
-            }
-            if (!finalHomeStickers.isEmpty()) {
-                rvStickersHorizontal.setLayoutAnimation(animation);
+            // 1. STICKERS
+            if (rvStickersHorizontal.getAdapter() == null) {
+                // Si no tiene adaptador, creamos uno nuevo
                 rvStickersHorizontal.setAdapter(new StickerPackAdapter(finalHomeStickers, this, R.layout.item_sticker_mini));
+            } else {
+                // Si YA tiene adaptador, solo le avisamos que los datos están listos (sin recrear)
+                rvStickersHorizontal.getAdapter().notifyDataSetChanged();
             }
-            if (!finalHomeWallpapers.isEmpty()) {
-                rvWallpapersHorizontal.setLayoutAnimation(animation);
+
+// 2. WALLPAPERS
+            if (rvWallpapersHorizontal.getAdapter() == null) {
                 rvWallpapersHorizontal.setAdapter(new WallpaperAdapter(finalHomeWallpapers, R.layout.item_wallpaper_fixed));
+            } else {
+                ((WallpaperAdapter) rvWallpapersHorizontal.getAdapter()).updateData();
             }
-            if (!finalHomeBattery.isEmpty()) {
-                rvBatteryHorizontal.setLayoutAnimation(animation);
-                rvBatteryHorizontal.setAdapter(new BatteryThemeAdapter(this, finalHomeBattery, R.layout.item_battery_home, theme -> {
-                    Intent intent = new Intent(MainActivity.this, BatteryPreviewActivity.class);
-                    intent.putExtra("THEME_ID", theme.id);
-                    startActivity(intent);
-                }));
+
+// 3. WIDGETS
+            if (rvWidgetGallery.getAdapter() == null) {
+                widgetAdapter = new WidgetGalleryAdapter(MainActivity.this, finalHomeWidgets, true, widgetStatusMap);
+                rvWidgetGallery.setAdapter(widgetAdapter);
+            } else {
+                if (widgetAdapter != null) widgetAdapter.updateData();
             }
             isHomeInitialized = true;
         } else {

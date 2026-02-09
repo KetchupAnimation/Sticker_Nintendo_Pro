@@ -90,7 +90,7 @@
 
         <activity
             android:name=".FullListActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -150,7 +150,7 @@
 
         <activity
             android:name=".SearchActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+
             android:windowSoftInputMode="stateVisible" />
 
         <receiver
