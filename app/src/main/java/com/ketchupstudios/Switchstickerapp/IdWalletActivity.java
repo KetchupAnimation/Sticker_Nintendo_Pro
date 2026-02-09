@@ -202,7 +202,7 @@ public class IdWalletActivity extends AppCompatActivity {
         inputName.addTextChangedListener(watcher);
         inputCode.addTextChangedListener(watcher);
 
-        btnSave.setOnClickListener(v -> cargarAnuncioYGuardar());
+        btnSave.setOnClickListener(v -> verificarYGuardar());
 
         rvThemes.setLayoutManager(new GridLayoutManager(this, 3));
         new Thread(this::descargarTemas).start();
