@@ -62,6 +62,7 @@ dependencies {
     implementation ("com.google.firebase:firebase-auth")       // Para Login
     implementation ("com.google.firebase:firebase-firestore")  // Base de datos
     implementation ("com.google.android.gms:play-services-auth:20.7.0") // Google Login
+    implementation("com.google.android.ump:user-messaging-platform:2.2.0")
 
     // 5. OTRAS UTILIDADES
     implementation("androidx.work:work-runtime:2.8.1")

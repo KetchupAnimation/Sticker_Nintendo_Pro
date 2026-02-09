@@ -148,4 +148,34 @@ public class BatteryWidgetProvider extends AppWidgetProvider {
             e.printStackTrace();
         }
     }
+
+    // 1. SE EJECUTA CUANDO SE AGREGA EL PRIMER WIDGET (Arranca el servicio)
+    @Override
+    public void onEnabled(Context context) {
+        super.onEnabled(context);
+        try {
+            android.content.Intent serviceIntent = new android.content.Intent(context, BatteryService.class);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent);
+            } else {
+                context.startService(serviceIntent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 2. SE EJECUTA CUANDO SE BORRA EL ÚLTIMO WIDGET (Apaga el servicio y ahorra batería)
+    @Override
+    public void onDisabled(Context context) {
+        super.onDisabled(context);
+        try {
+            context.stopService(new android.content.Intent(context, BatteryService.class));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
 }

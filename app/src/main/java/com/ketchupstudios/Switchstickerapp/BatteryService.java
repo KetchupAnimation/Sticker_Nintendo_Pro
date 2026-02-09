@@ -108,16 +108,21 @@ public class BatteryService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        // 1. Dejar de escuchar la batería (Importante para no gastar CPU)
         if (powerReceiver != null) {
             try {
                 unregisterReceiver(powerReceiver);
             } catch (Exception e) {
-                e.printStackTrace();
+                // Ignorar si ya estaba desregistrado
             }
         }
-        // Intentar revivir si nos destruyen
-        Intent broadcastIntent = new Intent("com.ketchupstudios.Switchstickerapp.RESTART_SERVICE");
-        sendBroadcast(broadcastIntent);
+
+        // 2. Quitar la notificación permanente de la barra de estado
+        stopForeground(true);
+
+        // 3. ¡LISTO! No agregues nada de "restart" o "broadcast".
+        // Así el servicio descansa y la batería del usuario también.
     }
 
     @Nullable

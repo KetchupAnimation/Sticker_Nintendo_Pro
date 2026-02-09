@@ -53,6 +53,7 @@
 -keep class com.google.zxing.** { *; }
 -keep class com.journeyapps.barcodescanner.** { *; }
 -keep class com.journeyapps.barcodescanner.CaptureActivity { *; }
+-keep class com.ketchupstudios.Switchstickerapp.IdWalletActivity$IdTheme { *; }
 
 # ============================================================
 # 3. TUS MODELOS DE DATOS (EVITA CRASH EN LOGIN Y LISTAS)

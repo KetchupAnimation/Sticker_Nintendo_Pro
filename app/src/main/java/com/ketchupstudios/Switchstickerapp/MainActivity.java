@@ -43,6 +43,13 @@ import java.util.Date;
 import java.util.Locale;
 import com.google.android.gms.ads.AdError;
 
+import com.google.android.ump.ConsentForm;
+import com.google.android.ump.ConsentInformation;
+import com.google.android.ump.ConsentRequestParameters;
+import com.google.android.ump.FormError;
+import com.google.android.ump.UserMessagingPlatform;
+import com.google.android.ump.ConsentDebugSettings;
+
 // LIBRERÍAS EXTERNAS
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.bumptech.glide.Glide;
@@ -202,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
         WorkManager.getInstance(this).enqueue(new OneTimeWorkRequest.Builder(WidgetUpdateWorker.class).build());
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         setContentView(R.layout.activity_main);
+        verificarDailyLogin();
 
         // --- PEGA AQUÍ EL CÓDIGO QUE ESTABA EN ROJO ---
         // Inicializamos las vistas de la UI principal (Monedas y Menú)
@@ -352,15 +360,19 @@ public class MainActivity extends AppCompatActivity {
         isHome = true;
 
         try {
+           /*
             Intent serviceIntent = new Intent(this, BatteryService.class);
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
             } else {
                 startService(serviceIntent);
             }
+            */
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        inicializarConsentimientoYAnuncios();
     }
 
     private void signIn() {
@@ -2192,6 +2204,155 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    // ===============================================================
+    // LÓGICA DE DAILY BONUS (RECOMPENSA DIARIA)
+    // ===============================================================
+
+    private void verificarDailyLogin() {
+        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+
+        // Obtenemos la fecha de hoy (formato AAAA-MM-DD)
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        String hoy = sdf.format(new Date());
+
+        // Obtenemos la última fecha en que reclamó
+        String ultimaFecha = prefs.getString("last_daily_claim", "");
+
+        // Si la fecha es diferente, mostramos el regalo
+        if (!hoy.equals(ultimaFecha)) {
+            mostrarDialogoDailyBonus(hoy);
+        }
+    }
+
+    private void mostrarDialogoDailyBonus(String fechaHoy) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_daily_bonus, null);
+        builder.setView(view);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        // Evitamos que lo cierren tocando fuera (para que decidan sí o no)
+        dialog.setCancelable(false);
+
+        Button btnClaim = view.findViewById(R.id.btnClaimBonus);
+        TextView btnClose = view.findViewById(R.id.btnCloseBonus);
+
+        btnClaim.setOnClickListener(v -> {
+            dialog.dismiss();
+            // Llamamos a tu método existente de ver anuncio recompensado
+            cargarAnuncioYEjecutar(() -> {
+                // ACCIÓN AL TERMINAR EL ANUNCIO:
+                darRecompensaDiaria(fechaHoy);
+            });
+        });
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+
+       // Esto fuerza el ancho a 320dp (tamaño tarjeta) y altura automática
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(convertDpToPx(320), android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        // ------------------------------------------------
+    }
+
+    private void darRecompensaDiaria(String fechaHoy) {
+        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        int saldoActual = prefs.getInt("skip_tickets", 0);
+        int premio = 3; // Cantidad de monedas a regalar
+
+        // Guardar nuevo saldo y fecha
+        prefs.edit()
+                .putInt("skip_tickets", saldoActual + premio)
+                .putString("last_daily_claim", fechaHoy)
+                .apply();
+
+        // Efectos visuales y sonoros
+        actualizarMonedasUI();
+        actualizarMonedasEnNube(saldoActual + premio);
+
+        // Sonido de monedas
+        try {
+            MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
+            if (mp != null) {
+                mp.setOnCompletionListener(MediaPlayer::release);
+                mp.start();
+            }
+        } catch (Exception e) {}
+
+        Toast.makeText(this, "Daily Bonus claimed! +3 Coins 💰", Toast.LENGTH_LONG).show();
+    }
+
+
+    // ===============================================================
+    // GESTIÓN DE CONSENTIMIENTO (CMP / GDPR) - OBLIGATORIO
+    // ===============================================================
+
+    private void inicializarConsentimientoYAnuncios() {
+        // Configurar parámetros (puedes agregar .setTagForUnderAgeOfConsent(false) si aplica)
+        ConsentRequestParameters params = new ConsentRequestParameters.Builder().build();
+
+        ConsentInformation consentInformation = UserMessagingPlatform.getConsentInformation(this);
+
+        // Descomenta esto SOLO para probar (fuerza que salga el aviso como si estuvieras en Europa)
+        /*
+
+        ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(this)
+                .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
+                .addTestDeviceHashedId("467377BFFCEBEA52507C0CB471814D31") // Ver Logcat para obtenerlo
+                .build();
+        params = new ConsentRequestParameters.Builder().setConsentDebugSettings(debugSettings).build();
+        */
+
+
+        consentInformation.requestConsentInfoUpdate(
+                this,
+                params,
+                (ConsentInformation.OnConsentInfoUpdateSuccessListener) () -> {
+                    // Si la info se actualizó, intentamos cargar el formulario
+                    UserMessagingPlatform.loadAndShowConsentFormIfRequired(
+                            this,
+                            (ConsentForm.OnConsentFormDismissedListener) loadAndShowError -> {
+                                // Se cerró el formulario (o no era necesario)
+                                if (loadAndShowError != null) {
+                                    // Hubo un error, pero intentamos iniciar anuncios igual
+                                    android.util.Log.w("CMP", String.format("%s: %s",
+                                            loadAndShowError.getErrorCode(),
+                                            loadAndShowError.getMessage()));
+                                }
+
+                                // SIEMPRE inicializamos los anuncios aquí, tengan o no consentimiento
+                                if (consentInformation.canRequestAds()) {
+                                    iniciarMobileAds();
+                                }
+                            }
+                    );
+                },
+                (ConsentInformation.OnConsentInfoUpdateFailureListener) requestConsentError -> {
+                    // Error al pedir info, iniciamos anuncios igual por si acaso
+                    android.util.Log.w("CMP", String.format("%s: %s",
+                            requestConsentError.getErrorCode(),
+                            requestConsentError.getMessage()));
+                    iniciarMobileAds();
+                });
+
+        // Verificamos si ya podemos pedir anuncios mientras carga lo demás
+        if (consentInformation.canRequestAds()) {
+            iniciarMobileAds();
+        }
+    }
+
+    private void iniciarMobileAds() {
+        // Aquí movemos tu código de inicialización original
+        MobileAds.initialize(this, initializationStatus -> {
+            cargarAnuncioIntersticial();
+        });
+    }
 
 
 }
