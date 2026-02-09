@@ -80,6 +80,8 @@ public class IdWalletActivity extends AppCompatActivity {
     private int slotSeleccionado = 0;
     private String[] myGameIds = {"", "", ""};
     private static final int RC_PICK_GAME = 9002;
+    private String[] myGameTitles = {"", "", ""};
+    private String[] myGameImages = {"", "", ""};
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -238,9 +240,19 @@ public class IdWalletActivity extends AppCompatActivity {
         currentArtistName = prefs.getString("saved_artist_name", "Nintendo");
         currentThemeUrl = prefs.getString("saved_image_url", "");
 
-        myGameIds[0] = prefs.getString("saved_game_1", "");
-        myGameIds[1] = prefs.getString("saved_game_2", "");
-        myGameIds[2] = prefs.getString("saved_game_3", "");
+        // --- REEMPLAZA EL BLOQUE DE CARGA DE JUEGOS POR ESTO ---
+        myGameIds[0] = prefs.getString("game_0_id", "");
+        myGameTitles[0] = prefs.getString("game_0_title", "");
+        myGameImages[0] = prefs.getString("game_0_image", "");
+
+        myGameIds[1] = prefs.getString("game_1_id", "");
+        myGameTitles[1] = prefs.getString("game_1_title", "");
+        myGameImages[1] = prefs.getString("game_1_image", "");
+
+        myGameIds[2] = prefs.getString("game_2_id", "");
+        myGameTitles[2] = prefs.getString("game_2_title", "");
+        myGameImages[2] = prefs.getString("game_2_image", "");
+        // -------------------------------------------------------
 
         aplicarCambiosVisuales();
 
@@ -454,9 +466,13 @@ public class IdWalletActivity extends AppCompatActivity {
         editor.putString("saved_image_url", currentThemeUrl);
         editor.putString("saved_artist_name", currentArtistName);
 
-        editor.putString("saved_game_1", myGameIds[0]);
-        editor.putString("saved_game_2", myGameIds[1]);
-        editor.putString("saved_game_3", myGameIds[2]);
+        // --- GUARDADO LOCAL DETALLADO ---
+        for (int i = 0; i < 3; i++) {
+            editor.putString("game_" + i + "_id", myGameIds[i]);
+            editor.putString("game_" + i + "_title", myGameTitles[i]);
+            editor.putString("game_" + i + "_image", myGameImages[i]);
+        }
+        // --------------------------------
 
         if (mAuth.getCurrentUser() != null) {
             editor.putString("user_uid", mAuth.getCurrentUser().getUid());
@@ -471,7 +487,19 @@ public class IdWalletActivity extends AppCompatActivity {
             cloudData.put("selected_card_id", currentThemeId);
             cloudData.put("saved_theme_id", currentThemeId);
             cloudData.put("saved_theme_color", currentThemeColor);
-            cloudData.put("favorite_games", Arrays.asList(myGameIds));
+            // --- CONSTRUIR LISTA DE MAPAS PARA LA NUBE ---
+            List<Map<String, String>> gamesList = new ArrayList<>();
+            for (int i = 0; i < 3; i++) {
+                if (myGameIds[i] != null && !myGameIds[i].isEmpty()) {
+                    Map<String, String> g = new HashMap<>();
+                    g.put("id", myGameIds[i]);
+                    g.put("title", myGameTitles[i] != null ? myGameTitles[i] : "");
+                    g.put("image", myGameImages[i] != null ? myGameImages[i] : "");
+                    gamesList.add(g);
+                }
+            }
+            cloudData.put("favorite_games", gamesList);
+            // ---------------------------------------------
 
             db.collection("users").document(mAuth.getCurrentUser().getUid())
                     .set(cloudData, com.google.firebase.firestore.SetOptions.merge())
@@ -548,9 +576,16 @@ public class IdWalletActivity extends AppCompatActivity {
 
         if (requestCode == RC_PICK_GAME && resultCode == RESULT_OK && data != null) {
             String gameId = data.getStringExtra("GAME_ID");
+            // --- CAPTURAR DATOS EXTRA ---
+            String gameTitle = data.getStringExtra("GAME_TITLE");
+            String gameImage = data.getStringExtra("GAME_IMAGE");
 
             // ACTUALIZAR SOLO VISUALMENTE (PREVIEW)
-            myGameIds[slotSeleccionado - 1] = gameId;
+            int index = slotSeleccionado - 1;
+            myGameIds[index] = gameId;
+            myGameTitles[index] = gameTitle;
+            myGameImages[index] = gameImage;
+            // ----------------------------
             hasUnsavedChanges = true;
 
             ImageView imgDestino = null;
@@ -590,7 +625,8 @@ public class IdWalletActivity extends AppCompatActivity {
                         String cloudCode = documentSnapshot.getString("user_code");
                         String cloudThemeId = documentSnapshot.getString("selected_card_id");
                         String cloudThemeColor = documentSnapshot.getString("saved_theme_color");
-                        List<String> cloudGames = (List<String>) documentSnapshot.get("favorite_games");
+                        List<Map<String, String>> cloudGames = (List<Map<String, String>>) documentSnapshot.get("favorite_games");
+
 
                         SharedPreferences prefs = getSharedPreferences("IdWalletPrefs", MODE_PRIVATE);
                         SharedPreferences.Editor editor = prefs.edit();
@@ -611,11 +647,23 @@ public class IdWalletActivity extends AppCompatActivity {
 
                         if (cloudThemeColor != null) editor.putString("saved_theme_color", cloudThemeColor);
 
-                        if (cloudGames != null && cloudGames.size() >= 3) {
-                            editor.putString("saved_game_1", cloudGames.get(0));
-                            editor.putString("saved_game_2", cloudGames.get(1));
-                            editor.putString("saved_game_3", cloudGames.get(2));
+                        // --- GUARDAR JUEGOS DETALLADOS ---
+                        if (cloudGames != null) {
+                            for (int i = 0; i < 3; i++) {
+                                if (i < cloudGames.size()) {
+                                    Map<String, String> g = cloudGames.get(i);
+                                    editor.putString("game_" + i + "_id", g.get("id"));
+                                    editor.putString("game_" + i + "_title", g.get("title"));
+                                    editor.putString("game_" + i + "_image", g.get("image"));
+                                } else {
+                                    // Limpiar si no hay juego en esa posición
+                                    editor.remove("game_" + i + "_id");
+                                    editor.remove("game_" + i + "_title");
+                                    editor.remove("game_" + i + "_image");
+                                }
+                            }
                         }
+                        // ---------------------------------
                         editor.apply();
 
                         try {

@@ -1617,7 +1617,8 @@ public class MainActivity extends AppCompatActivity {
         actualizarVisibilidadAlerta();
         if (isHome) { resetNavIcons(); if (navHome != null) navHome.setColorFilter(Color.parseColor("#ff4700")); }
 
-        actualizarMonedasUI(); // <--- AGREGAR ESTA LÍNEA
+        actualizarMonedasUI();
+        actualizarSaludo();
 
         // --- LÓGICA FINAL DE LA CAMPANA (ONBOARDING + NOTIFICACIÓN) ---
         android.content.SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
@@ -1736,6 +1737,27 @@ public class MainActivity extends AppCompatActivity {
             if (!localWidgets.isEmpty()) updates.put("fav_widgets", FieldValue.arrayUnion(localWidgets.toArray()));
             if (!localBattery.isEmpty()) updates.put("fav_battery", FieldValue.arrayUnion(localBattery.toArray()));
 
+            // --- C) JUEGOS: Preparamos los juegos locales para subirlos ---
+            android.content.SharedPreferences walletPrefs = getSharedPreferences("IdWalletPrefs", MODE_PRIVATE);
+            List<Map<String, String>> localGames = new ArrayList<>();
+            for (int i = 0; i < 3; i++) {
+                String gId = walletPrefs.getString("game_" + i + "_id", null);
+                if (gId != null && !gId.isEmpty()) {
+                    Map<String, String> gMap = new HashMap<>();
+                    gMap.put("id", gId);
+                    gMap.put("title", walletPrefs.getString("game_" + i + "_title", ""));
+                    gMap.put("image", walletPrefs.getString("game_" + i + "_image", ""));
+                    localGames.add(gMap);
+                }
+            }
+            // Solo subimos si la nube NO tiene juegos aún (para no borrar los que ya tenga guardados)
+            if (!localGames.isEmpty()) {
+                if (!snapshot.exists() || !snapshot.contains("favorite_games")) {
+                    updates.put("favorite_games", localGames);
+                }
+            }
+            // -------------------------------------------------------------
+
             // B) MONEDAS:
             // Si el usuario es nuevo en la nube (no tiene campo 'coins'), subimos sus monedas locales.
             // Si YA tiene monedas en la nube, respetamos la nube (para evitar trampas de borrar datos y re-logear).
@@ -1835,6 +1857,25 @@ public class MainActivity extends AppCompatActivity {
                         if (cardTheme != null && !cardTheme.isEmpty()) {
                             editor.putString("selected_card_id", cardTheme);
                         }
+
+                        // --- NUEVO: RECUPERAR JUEGOS FAVORITOS ---
+                        List<Map<String, String>> cloudGames = (List<Map<String, String>>) doc.get("favorite_games");
+                        if (cloudGames != null) {
+                            // Limpiamos los slots primero
+                            for(int i=0; i<3; i++) {
+                                editor.remove("game_"+i+"_id").remove("game_"+i+"_title").remove("game_"+i+"_image");
+                            }
+                            // Guardamos los que vienen de la nube
+                            for (int i = 0; i < cloudGames.size() && i < 3; i++) {
+                                Map<String, String> g = cloudGames.get(i);
+                                if (g != null) {
+                                    editor.putString("game_" + i + "_id", g.get("id"));
+                                    editor.putString("game_" + i + "_title", g.get("title"));
+                                    editor.putString("game_" + i + "_image", g.get("image"));
+                                }
+                            }
+                        }
+                        // -----------------------------------------
 
                         // Recuperar Lista de Amigos
                         List<String> friends = (List<String>) doc.get("friends");
@@ -2033,6 +2074,24 @@ public class MainActivity extends AppCompatActivity {
     // Función auxiliar para que el diseño sea exacto en cualquier pantalla
     private int convertDpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+
+    // MÉTODO NUEVO: Cambia "Discover" por el nombre del usuario
+    private void actualizarSaludo() {
+        if (viewHome == null) return;
+
+        TextView txtTitle = viewHome.findViewById(R.id.txtHomeTitle);
+        if (txtTitle == null) return;
+
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && user.getDisplayName() != null && !user.getDisplayName().isEmpty()) {
+            // Truco: Tomamos solo el primer nombre para que no se vea gigante
+            String firstName = user.getDisplayName().split(" ")[0];
+            txtTitle.setText(firstName);
+        } else {
+            txtTitle.setText("Discover");
+        }
     }
 
 
