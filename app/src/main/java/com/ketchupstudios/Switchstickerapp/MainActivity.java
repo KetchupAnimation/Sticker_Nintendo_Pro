@@ -1451,38 +1451,72 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void procesarWallpaperNormal(Config.Wallpaper wall) {
-        // Incrementamos el contador de clics
-        wallpaperClickCount++;
+    // ===============================================================
+    // LÓGICA CORREGIDA: 3 CLICS + OPCIÓN DE GASTAR MONEDAS
+    // ===============================================================
 
-        // ¿Llegamos al límite de 3?
+    private void procesarWallpaperNormal(Config.Wallpaper wall) {
+        wallpaperClickCount++; // Sumamos un clic
+
+        // ¿Llegamos al límite de 3 clics? -> TOCA ANUNCIO
         if (wallpaperClickCount >= WALLPAPER_ADS_THRESHOLD) {
-            if (mInterstitialAd != null) {
-                mInterstitialAd.show(this);
-                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
-                        mInterstitialAd = null;
-                        wallpaperClickCount = 0; // REINICIAMOS CONTADOR
-                        cargarAnuncioIntersticial(); // Cargar el siguiente
-                        abrirWallpaperDetalles(wall); // Abrir el wallpaper
-                    }
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(AdError adError) {
-                        mInterstitialAd = null;
-                        abrirWallpaperDetalles(wall); // Si falla, abrimos igual
-                    }
+
+            // 1. VERIFICAMOS SALDO ANTES DE LANZAR EL ANUNCIO
+            android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+            int tickets = prefs.getInt("skip_tickets", 0);
+            final int COSTO = 3;
+
+            if (tickets >= COSTO) {
+                // CASO A: TIENE MONEDAS -> LE PREGUNTAMOS
+                mostrarDialogoGastarMonedas("Skip Ad?", COSTO, tickets, () -> {
+                    // Eligió GASTAR monedas
+                    prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
+                    Toast.makeText(this, "Ad Skipped! ⚡", Toast.LENGTH_SHORT).show();
+
+                    // Reiniciamos contador y abrimos SIN anuncio
+                    wallpaperClickCount = 0;
+                    abrirWallpaperDetalles(wall);
+
+                }, () -> {
+                    // Eligió VER el anuncio (o cerró el diálogo)
+                    lanzarIntersticial(wall);
                 });
             } else {
-                // Si el anuncio no estaba listo, abrimos y NO reiniciamos contador (para intentar a la próxima)
-                abrirWallpaperDetalles(wall);
-                cargarAnuncioIntersticial();
+                // CASO B: NO TIENE MONEDAS -> ANUNCIO OBLIGATORIO
+                lanzarIntersticial(wall);
             }
+
         } else {
-            // Clic 1 o 2 -> Pase libre
+            // NO TOCA ANUNCIO (Clic 1 o 2) -> PASE LIBRE
             abrirWallpaperDetalles(wall);
-            // Cargar anuncio en background por si acaso
+            // Cargar el siguiente anuncio por si acaso
             if (mInterstitialAd == null) cargarAnuncioIntersticial();
+        }
+    }
+
+    // Método auxiliar para lanzar el Intersticial y manejar el contador
+    private void lanzarIntersticial(Config.Wallpaper wall) {
+        if (mInterstitialAd != null) {
+            mInterstitialAd.show(this);
+            mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null;
+                    wallpaperClickCount = 0; // ¡IMPORTANTE! Reiniciar contador al cerrar anuncio
+                    cargarAnuncioIntersticial();
+                    abrirWallpaperDetalles(wall);
+                }
+                @Override
+                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    mInterstitialAd = null;
+                    abrirWallpaperDetalles(wall); // Si falla, abrimos igual
+                }
+            });
+        } else {
+            // Si el anuncio no estaba listo, abrimos y NO reiniciamos el contador
+            // (para intentar mostrarlo en el siguiente clic)
+            abrirWallpaperDetalles(wall);
+            cargarAnuncioIntersticial();
         }
     }
 
