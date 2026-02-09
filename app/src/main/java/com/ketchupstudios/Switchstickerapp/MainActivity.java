@@ -352,12 +352,14 @@ public class MainActivity extends AppCompatActivity {
         isHome = true;
 
         try {
+           /*
             Intent serviceIntent = new Intent(this, BatteryService.class);
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
             } else {
                 startService(serviceIntent);
             }
+            */
         } catch (Exception e) {
             e.printStackTrace();
         }
