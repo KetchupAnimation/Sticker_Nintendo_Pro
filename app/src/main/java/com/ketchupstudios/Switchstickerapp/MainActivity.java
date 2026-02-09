@@ -77,6 +77,9 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.SetOptions;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -382,7 +385,7 @@ public class MainActivity extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
                         Toast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
                         getSharedPreferences("IdWalletPrefs", MODE_PRIVATE).edit().putString("user_uid", user.getUid()).apply();
-                        sincronizarFavoritosDesdeNube();
+                        fusionarYSubirDatosLocales();
                         mostrarVistaFavoritos();
                     } else {
                         Toast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show();
@@ -1425,6 +1428,7 @@ public class MainActivity extends AppCompatActivity {
                 // ACCIÓN: GASTAR
                 prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
                 actualizarMonedasUI();
+                actualizarMonedasEnNube(tickets - COSTO);
                 Toast.makeText(this, "Redeemed! Opening ad-free", Toast.LENGTH_SHORT).show();
                 abrirWallpaperDetalles(wall);
             }, () -> {
@@ -1487,6 +1491,7 @@ public class MainActivity extends AppCompatActivity {
             mostrarDialogoGastarMonedas("Unlock Pack?", COST, tickets, () -> {
                 prefs.edit().putInt("skip_tickets", tickets - COST).apply();
                 actualizarMonedasUI();
+                actualizarMonedasEnNube(tickets - COST);
                 Toast.makeText(this, "Pack Unlocked! 🔓", Toast.LENGTH_SHORT).show();
                 abrirPantallaDetalles(pack);
             }, () -> {
@@ -1709,6 +1714,68 @@ public class MainActivity extends AppCompatActivity {
         pendingDeepLinkId = null;
     }
 
+
+    // =========================================================
+// NUEVO: FUSIÓN DE DATOS (LOCAL -> NUBE) AL LOGEARSE
+// =========================================================
+    private void fusionarYSubirDatosLocales() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference docRef = db.collection("users").document(user.getUid());
+
+        // 1. LEER DATOS LOCALES ACTUALES (PRE-LOGIN)
+        android.content.SharedPreferences appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        android.content.SharedPreferences widgetPrefs = getSharedPreferences("WidgetPrefs", MODE_PRIVATE);
+        android.content.SharedPreferences rewardsPrefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+
+        Set<String> localWalls = appPrefs.getStringSet("fav_wallpapers_ids", new HashSet<>());
+        Set<String> localWidgets = widgetPrefs.getStringSet("fav_wallpapers", new HashSet<>()); // Ojo: usa esta key
+        Set<String> localBattery = appPrefs.getStringSet("fav_battery_ids", new HashSet<>());
+        int localCoins = rewardsPrefs.getInt("skip_tickets", 0);
+
+        // 2. CONSULTAR NUBE PARA DECIDIR (MERGE INTELIGENTE)
+        docRef.get().addOnSuccessListener(snapshot -> {
+            Map<String, Object> updates = new HashMap<>();
+
+            // A) FAVORITOS: Usamos 'arrayUnion' para sumar sin duplicar ni borrar lo que ya estaba
+            if (!localWalls.isEmpty()) updates.put("fav_wallpapers", FieldValue.arrayUnion(localWalls.toArray()));
+            if (!localWidgets.isEmpty()) updates.put("fav_widgets", FieldValue.arrayUnion(localWidgets.toArray()));
+            if (!localBattery.isEmpty()) updates.put("fav_battery", FieldValue.arrayUnion(localBattery.toArray()));
+
+            // B) MONEDAS:
+            // Si el usuario es nuevo en la nube (no tiene campo 'coins'), subimos sus monedas locales.
+            // Si YA tiene monedas en la nube, respetamos la nube (para evitar trampas de borrar datos y re-logear).
+            if (!snapshot.exists() || !snapshot.contains("coins")) {
+                updates.put("coins", localCoins);
+            }
+
+            // 3. EJECUTAR LA SUBIDA
+            if (!updates.isEmpty()) {
+                docRef.set(updates, SetOptions.merge())
+                        .addOnSuccessListener(aVoid -> {
+                            // Una vez subido y mezclado todo, descargamos para tener la versión final
+                            sincronizarFavoritosDesdeNube();
+                        })
+                        .addOnFailureListener(e -> sincronizarFavoritosDesdeNube()); // Si falla, sincronizamos igual
+            } else {
+                // Si no había nada local nuevo, solo descargamos
+                sincronizarFavoritosDesdeNube();
+            }
+        }).addOnFailureListener(e -> sincronizarFavoritosDesdeNube());
+    }
+
+    // NUEVO: Helper para actualizar monedas cada vez que gastamos/ganamos
+    private void actualizarMonedasEnNube(int nuevasMonedas) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                    .update("coins", nuevasMonedas);
+        }
+    }
+
+
     // =========================================================
     // SINCRONIZACIÓN COMPLETA DE PERFIL Y FAVORITOS
     // =========================================================
@@ -1783,6 +1850,18 @@ public class MainActivity extends AppCompatActivity {
                             Set<String> friendSet = new HashSet<>(friends);
                             editor.putStringSet("saved_friends", friendSet);
                         }
+
+                        // --- NUEVO: RECUPERAR MONEDAS ---
+                        Long cloudCoins = doc.getLong("coins");
+                        if (cloudCoins != null) {
+                            // Actualizamos la billetera local con lo que diga la nube
+                            getSharedPreferences("UserRewards", MODE_PRIVATE)
+                                    .edit().putInt("skip_tickets", cloudCoins.intValue()).apply();
+
+                            // Actualizamos la UI si estamos en el hilo principal
+                            runOnUiThread(this::actualizarMonedasUI);
+                        }
+// -------------------------------
 
                         // ¡GUARDAR CAMBIOS!
                         editor.apply();
