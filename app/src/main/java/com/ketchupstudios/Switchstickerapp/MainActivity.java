@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import com.google.android.gms.ads.AdError;
 
 // LIBRERÍAS EXTERNAS
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -1409,69 +1410,78 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    // 2. LÓGICA DE NAVEGACIÓN INTELIGENTE
+
+
+
     // ===============================================================
-    // LÓGICA DE MONEDAS VS ANUNCIOS (CON PREGUNTA)
+    // CEREBRO CENTRAL DE WALLPAPERS (PREMIUM VS NORMAL)
     // ===============================================================
 
-    public void intentarAbrirWallpaperConIntersticial(Config.Wallpaper wall) {
+    // ESTE ES EL MÉTODO QUE DEBES LLAMAR DESDE TU ADAPTER
+    public void analizarClickWallpaper(Config.Wallpaper wall) {
+        if (wall.isPremium) {
+            // CAMINO A: Es Premium -> Paga con monedas o ve video largo
+            procesarWallpaperPremium(wall);
+        } else {
+            // CAMINO B: Es Normal -> Sistema de 3 Clics con Intersticial
+            procesarWallpaperNormal(wall);
+        }
+    }
+
+    private void procesarWallpaperPremium(Config.Wallpaper wall) {
         android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
         int tickets = prefs.getInt("skip_tickets", 0);
         final int COSTO = 3;
 
-        // CASO A: TIENE SUFICIENTES MONEDAS -> USAMOS EL DIÁLOGO NUEVO
         if (tickets >= COSTO) {
-            mostrarDialogoGastarMonedas("Skip Ad?", COSTO, tickets, () -> {
-                // ACCIÓN: GASTAR
+            mostrarDialogoGastarMonedas("Unlock Premium?", COSTO, tickets, () -> {
+                // Pagó con monedas
                 prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
                 actualizarMonedasUI();
-                actualizarMonedasEnNube(tickets - COSTO);
-                Toast.makeText(this, "Redeemed! Opening ad-free", Toast.LENGTH_SHORT).show();
+                actualizarMonedasEnNube(tickets - COSTO); // Sincronizar
+                Toast.makeText(this, "Premium Unlocked! 💎", Toast.LENGTH_SHORT).show();
                 abrirWallpaperDetalles(wall);
             }, () -> {
-                // ACCIÓN: VER ANUNCIO
-                lanzarLogicaAnuncio(wall);
+                // Prefirió ver anuncio recompensado
+                cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
             });
-        }
-        // CASO B: NO ALCANZA -> ANUNCIO DIRECTO
-        else {
-            lanzarLogicaAnuncio(wall);
+        } else {
+            // No tiene monedas -> Anuncio recompensado directo
+            cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
         }
     }
 
-    // Método auxiliar para no escribir esto dos veces
-    private void lanzarLogicaAnuncio(Config.Wallpaper wall) {
+    private void procesarWallpaperNormal(Config.Wallpaper wall) {
+        // Incrementamos el contador de clics
         wallpaperClickCount++;
 
-        // Si llegó al contador (3 clics)
+        // ¿Llegamos al límite de 3?
         if (wallpaperClickCount >= WALLPAPER_ADS_THRESHOLD) {
             if (mInterstitialAd != null) {
+                mInterstitialAd.show(this);
                 mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
                     @Override
                     public void onAdDismissedFullScreenContent() {
                         mInterstitialAd = null;
-                        wallpaperClickCount = 0; // RESET SOLO SI SE MOSTRÓ
-                        cargarAnuncioIntersticial();
-                        abrirWallpaperDetalles(wall);
+                        wallpaperClickCount = 0; // REINICIAMOS CONTADOR
+                        cargarAnuncioIntersticial(); // Cargar el siguiente
+                        abrirWallpaperDetalles(wall); // Abrir el wallpaper
                     }
-
                     @Override
-                    public void onAdFailedToShowFullScreenContent(com.google.android.gms.ads.AdError adError) {
+                    public void onAdFailedToShowFullScreenContent(AdError adError) {
                         mInterstitialAd = null;
-                        wallpaperClickCount = 0; // RESET TAMBIÉN SI FALLA AL MOSTRAR
-                        abrirWallpaperDetalles(wall);
+                        abrirWallpaperDetalles(wall); // Si falla, abrimos igual
                     }
                 });
-                mInterstitialAd.show(this);
             } else {
-                // Si el anuncio no está listo al 3er clic, abrimos directo pero NO reseteamos
-                // el contador, para que el 4to clic intente mostrarlo de nuevo.
+                // Si el anuncio no estaba listo, abrimos y NO reiniciamos contador (para intentar a la próxima)
                 abrirWallpaperDetalles(wall);
                 cargarAnuncioIntersticial();
             }
         } else {
-            // Clics 1 y 2
+            // Clic 1 o 2 -> Pase libre
             abrirWallpaperDetalles(wall);
+            // Cargar anuncio en background por si acaso
             if (mInterstitialAd == null) cargarAnuncioIntersticial();
         }
     }
@@ -1499,24 +1509,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void intentarAbrirWallpaperPremium(Config.Wallpaper wall) {
-        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
-        int tickets = prefs.getInt("skip_tickets", 0);
-        final int COST = 3;
-
-        if (tickets >= COST) {
-            mostrarDialogoGastarMonedas("Unlock Premium?", COST, tickets, () -> {
-                prefs.edit().putInt("skip_tickets", tickets - COST).apply();
-                actualizarMonedasUI();
-                Toast.makeText(this, "Redeemed! Opening... 😎", Toast.LENGTH_SHORT).show();
-                abrirWallpaperDetalles(wall);
-            }, () -> {
-                cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
-            });
-        } else {
-            cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
-        }
-    }
 
     private void abrirPantallaDetalles(StickerPack pack) {
         Config.selectedPack = pack;

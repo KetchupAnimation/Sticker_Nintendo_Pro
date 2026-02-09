@@ -281,7 +281,7 @@ public class PremiumAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             wh.itemView.setOnClickListener(v -> {
                 if (wh.imgGiftOverlay != null && wh.imgGiftOverlay.getVisibility() == View.VISIBLE) return;
-                if (context instanceof MainActivity) ((MainActivity) context).intentarAbrirWallpaperPremium(wall);
+                if (context instanceof MainActivity) ((MainActivity) context).analizarClickWallpaper(wall);
                 else if (context instanceof FullListActivity) ((FullListActivity) context).intentarAbrirWallpaperPremium(wall);
             });
 

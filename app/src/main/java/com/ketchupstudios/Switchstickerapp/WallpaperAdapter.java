@@ -170,7 +170,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
                 // --- DAR LIKE ---
                 if (wall.isLimitedTime) {
                     if (context instanceof MainActivity) {
-                        ((MainActivity) context).cargarAnuncioYEjecutar(() -> procederADarLike(wallId, holder, true));
+                        ((MainActivity) context).analizarClickWallpaper(wall);
                     } else {
                         procederADarLike(wallId, holder, true);
                     }
@@ -213,46 +213,23 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
             if (holder.imgGiftOverlay != null && holder.imgGiftOverlay.getVisibility() == View.VISIBLE) return;
 
             if (context instanceof MainActivity) {
-                // Si es premium, lógica rewarded
-                if (wall.isPremium) {
-                    ((MainActivity) context).intentarAbrirWallpaperPremium(wall);
-                }
-                // PARA TODOS LOS DEMÁS (Normales y 24h), usar la lógica de los 3 clics
-                else {
-                    ((MainActivity) context).intentarAbrirWallpaperConIntersticial(wall);
-                }
+                // CORREGIDO: Usamos 'wall', no 'wallpaper'
+                ((MainActivity) context).analizarClickWallpaper(wall);
             }
             else if (context instanceof FullListActivity) {
-                if (wall.isPremium) ((FullListActivity) context).intentarAbrirWallpaperPremium(wall);
-                else if (wall.isLimitedTime) ((FullListActivity) context).intentarAbrirWallpaperConIntersticial(wall);
-                else {
-                    Intent intent = new Intent(context, WallpaperDetailsActivity.class);
-                    intent.putExtra("wall_name", wall.name);
-                    intent.putExtra("wall_author", wall.publisher);
-                    intent.putExtra("wall_image", wall.imageFile);
-                    intent.putExtra("wall_color", wall.colorBg);
-                    intent.putExtra("wall_artist_link", wall.artistLink);
-
-                    // ENVIAMOS DATOS IMPORTANTES
-                    intent.putExtra("is_limited", wall.isLimitedTime);
-                    intent.putExtra("is_hidden", wall.isHidden);
-
-                    context.startActivity(intent);
-                }
+                // Asegúrate de tener el método en FullListActivity también
+                ((FullListActivity) context).analizarClickWallpaper(wall);
             }
             else {
-                // FAVORITOS
+                // FAVORITOS (Abre directo)
                 Intent intent = new Intent(context, WallpaperDetailsActivity.class);
                 intent.putExtra("wall_name", wall.name);
                 intent.putExtra("wall_author", wall.publisher);
                 intent.putExtra("wall_image", wall.imageFile);
                 intent.putExtra("wall_color", wall.colorBg);
                 intent.putExtra("wall_artist_link", wall.artistLink);
-
-                // ENVIAMOS DATOS IMPORTANTES
                 intent.putExtra("is_limited", wall.isLimitedTime);
                 intent.putExtra("is_hidden", wall.isHidden);
-
                 context.startActivity(intent);
             }
         });

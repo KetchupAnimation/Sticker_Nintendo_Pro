@@ -58,6 +58,8 @@ public class Config {
         }
     }
 
+
+
     public static class Wallpaper {
         public String identifier;
         public String name;
@@ -126,6 +128,8 @@ public class Config {
     }
 
     // LISTAS GLOBALES
+
+
     public static List<Banner> banners = new ArrayList<>();
     public static List<Wallpaper> wallpapers = new ArrayList<>();
     public static ArrayList<StickerPack> packs = new ArrayList<>();

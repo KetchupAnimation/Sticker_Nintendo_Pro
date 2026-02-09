@@ -22,6 +22,12 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+
 import android.media.MediaPlayer;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
@@ -49,8 +55,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
-import com.google.android.gms.ads.FullScreenContentCallback;
-import com.google.android.gms.ads.LoadAdError;
 import com.bumptech.glide.Glide;
 
 public class FullListActivity extends AppCompatActivity {
@@ -85,7 +89,7 @@ public class FullListActivity extends AppCompatActivity {
     private Runnable accionPendiente;
 
     // --- VARIABLES INTERSTICIAL (WALLPAPERS) ---
-    private com.google.android.gms.ads.interstitial.InterstitialAd mInterstitialAd;
+    private InterstitialAd mInterstitialAd;
     private int wallpaperClickCount = 0;
     private final int WALLPAPER_ADS_THRESHOLD = 3; // Mostrar anuncio cada 3 clicks
 
@@ -209,7 +213,7 @@ public class FullListActivity extends AppCompatActivity {
                         recompensaGanada = false;
                     }
                     @Override
-                    public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
+                    public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                         mRewardedAd = null;
                         if (accionPendiente != null) accionPendiente.run();
                     }
@@ -223,10 +227,10 @@ public class FullListActivity extends AppCompatActivity {
     // 2. INTERSTITIAL (FRECUENCIA PARA WALLPAPERS)
     private void cargarAnuncioIntersticial() {
         AdRequest adRequest = new AdRequest.Builder().build();
-        com.google.android.gms.ads.interstitial.InterstitialAd.load(this, Config.ADMOB_INTERSTITIAL_ID, adRequest,
-                new com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback() {
+        InterstitialAd.load(this, Config.ADMOB_INTERSTITIAL_ID, adRequest,
+                new InterstitialAdLoadCallback() {
                     @Override
-                    public void onAdLoaded(@NonNull com.google.android.gms.ads.interstitial.InterstitialAd interstitialAd) {
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
                         mInterstitialAd = interstitialAd;
                     }
                     @Override
@@ -236,48 +240,73 @@ public class FullListActivity extends AppCompatActivity {
                 });
     }
 
-    // --- NUEVO: MÉTODO CON LÓGICA DE MONEDAS PARA WALLPAPERS ---
-    public void intentarAbrirWallpaperConIntersticial(Config.Wallpaper wall) {
-        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
-        int tickets = prefs.getInt("skip_tickets", 0);
-        final int COST = 3;
+    // ===============================================================
+    // CEREBRO CENTRAL DE WALLPAPERS (NUEVO - REQUERIDO POR ADAPTER)
+    // ===============================================================
 
-        if (tickets >= COST) {
-            mostrarDialogoGastarMonedas("Skip Ad?", COST, tickets, () -> {
-                prefs.edit().putInt("skip_tickets", tickets - COST).apply();
-                Toast.makeText(this, "Redeemed! Opening ad-free", Toast.LENGTH_SHORT).show();
-                abrirWallpaperDetalles(wall);
-            }, () -> {
-                lanzarLogicaAnuncioWallpaper(wall);
-            });
+    public void analizarClickWallpaper(Config.Wallpaper wall) {
+        if (wall.isPremium) {
+            procesarWallpaperPremium(wall);
         } else {
-            lanzarLogicaAnuncioWallpaper(wall);
+            procesarWallpaperNormal(wall);
         }
     }
 
-    // Método auxiliar para el contador de clicks (separado para que sea limpio)
-    private void lanzarLogicaAnuncioWallpaper(Config.Wallpaper wall) {
-        wallpaperClickCount++;
-        if (wallpaperClickCount >= WALLPAPER_ADS_THRESHOLD && mInterstitialAd != null) {
-            mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-                @Override
-                public void onAdDismissedFullScreenContent() {
-                    mInterstitialAd = null;
-                    wallpaperClickCount = 0;
-                    cargarAnuncioIntersticial();
-                    abrirWallpaperDetalles(wall);
-                }
-                @Override
-                public void onAdFailedToShowFullScreenContent(com.google.android.gms.ads.AdError adError) {
-                    mInterstitialAd = null;
-                    abrirWallpaperDetalles(wall);
-                }
+    private void procesarWallpaperPremium(Config.Wallpaper wall) {
+        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        int tickets = prefs.getInt("skip_tickets", 0);
+        final int COSTO = 3;
+
+        if (tickets >= COSTO) {
+            mostrarDialogoGastarMonedas("Unlock Premium?", COSTO, tickets, () -> {
+                prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
+                Toast.makeText(this, "Premium Unlocked! 💎", Toast.LENGTH_SHORT).show();
+                abrirWallpaperDetalles(wall);
+            }, () -> {
+                cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
             });
-            mInterstitialAd.show(this);
+        } else {
+            cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
+        }
+    }
+
+    private void procesarWallpaperNormal(Config.Wallpaper wall) {
+        wallpaperClickCount++;
+
+        if (wallpaperClickCount >= WALLPAPER_ADS_THRESHOLD) {
+            if (mInterstitialAd != null) {
+                mInterstitialAd.show(this);
+                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        mInterstitialAd = null;
+                        wallpaperClickCount = 0;
+                        cargarAnuncioIntersticial();
+                        abrirWallpaperDetalles(wall);
+                    }
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+                        mInterstitialAd = null;
+                        abrirWallpaperDetalles(wall);
+                    }
+                });
+            } else {
+                abrirWallpaperDetalles(wall);
+                cargarAnuncioIntersticial();
+            }
         } else {
             abrirWallpaperDetalles(wall);
             if (mInterstitialAd == null) cargarAnuncioIntersticial();
         }
+    }
+
+    // --- MÉTODOS DE COMPATIBILIDAD ---
+    // (Por si acaso el adaptador antiguo sigue llamando a estos nombres)
+    public void intentarAbrirWallpaperConIntersticial(Config.Wallpaper wall) {
+        analizarClickWallpaper(wall);
+    }
+    public void intentarAbrirWallpaperPremium(Config.Wallpaper wall) {
+        analizarClickWallpaper(wall);
     }
 
     // --- NUEVO: MÉTODO CON LÓGICA DE MONEDAS PARA STICKERS ---
@@ -298,11 +327,6 @@ public class FullListActivity extends AppCompatActivity {
         } else {
             cargarAnuncioYEjecutar(() -> abrirPantallaDetalles(pack));
         }
-    }
-
-    public void intentarAbrirWallpaperPremium(Config.Wallpaper wall) {
-        // Redirigimos a la lógica de monedas, que es la misma
-        intentarAbrirWallpaperConIntersticial(wall);
     }
 
     // =================================================================
@@ -487,7 +511,6 @@ public class FullListActivity extends AppCompatActivity {
                 for (int i = 0; i < array.length(); i++) {
                     JSONObject o = array.getJSONObject(i);
 
-                    // AQUÍ ESTÁ LA CORRECCIÓN: 7 PARÁMETROS
                     Config.batteryThemes.add(new Config.BatteryTheme(
                             o.getString("id"),
                             o.getString("name"),
@@ -534,18 +557,15 @@ public class FullListActivity extends AppCompatActivity {
                             } catch (Exception e){}
                         }
                         else if (type.equals("wallpaper")) {
-                            // --- CAMBIO: CARGAMOS EL WALLPAPER SIEMPRE ---
                             Config.Wallpaper w = new Config.Wallpaper(
                                     d.getString("identifier"), d.getString("name"), d.getString("image_file"),
                                     d.getString("publisher"), false, false, d.optString("artist_link", "")
                             );
                             w.colorBg = d.optString("ColorBG", "#FFFFFF");
                             w.isLimitedTime = true;
-                            w.isExpired = !isToday; // Marcamos si expiró
+                            w.isExpired = !isToday;
 
                             Config.wallpapers.add(w);
-
-                            // Guardamos el ID para no duplicarlo con la lista normal
                             limitedWallIds.add(d.getString("image_file"));
                         }
                     }
@@ -639,9 +659,7 @@ public class FullListActivity extends AppCompatActivity {
                             for (int k = 0; k < tagsArray.length(); k++) wall.tags.add(tagsArray.getString(k));
                         }
                         wall.colorBg = w.optString("ColorBG", "#FFFFFF");
-                        // --- ¡ESTA ES LA LÍNEA QUE FALTABA! ---
                         wall.isHidden = w.optBoolean("is_hidden", false);
-                        // --------------------------------------
                         Config.wallpapers.add(wall);
                     }
                 }
@@ -701,11 +719,9 @@ public class FullListActivity extends AppCompatActivity {
         intent.putExtra("wall_author", wall.publisher);
         intent.putExtra("wall_image", wall.imageFile);
         intent.putExtra("wall_color", wall.colorBg);
-
-        // --- AGREGA ESTA LÍNEA QUE FALTABA PARA EL BOTÓN DE ARTISTA ---
         intent.putExtra("wall_artist_link", wall.artistLink);
-        // --------------------------------------------------------------
-
+        intent.putExtra("is_limited", wall.isLimitedTime);
+        intent.putExtra("is_hidden", wall.isHidden);
         startActivity(intent);
     }
 
@@ -764,9 +780,7 @@ public class FullListActivity extends AppCompatActivity {
 
         android.app.AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
-            // Hace que el fondo sea transparente para que se vean los bordes redondeados
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-            // Evita que el diálogo se estire a toda la pantalla
             dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
         }
 
@@ -808,6 +822,4 @@ public class FullListActivity extends AppCompatActivity {
 
         dialog.show();
     }
-
-
 }
