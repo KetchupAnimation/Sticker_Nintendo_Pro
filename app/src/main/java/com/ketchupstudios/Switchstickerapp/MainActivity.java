@@ -975,14 +975,6 @@ public class MainActivity extends AppCompatActivity {
             Config.dataLoaded = true;      // <--- Confirma que ya hay datos
 
 
-            runOnUiThread(() -> {
-                progressBar.setVisibility(View.GONE);
-                verificarActualizacionForzada();
-                checkAndShowNews();
-                // Usa las variables de Config en lugar de las locales
-                prepararVistaHome(finalPromo, Config.totalWidgetsCount, Config.widgetStatusMap);
-            });
-
 
             final Map<Integer, String> finalStatusMap = widgetStatusMap;
 
