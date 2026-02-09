@@ -387,7 +387,7 @@ public class WalletHomeActivity extends AppCompatActivity {
         } else {
             btnShareHome.setText("Share Card");
             btnShareHome.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#25D366")));
-            btnShareHome.setOnClickListener(v -> iniciarCompartirConAnuncio());
+            btnShareHome.setOnClickListener(v -> verificarYCompartir());
         }
     }
 
@@ -918,4 +918,61 @@ public class WalletHomeActivity extends AppCompatActivity {
                 .putBoolean("has_notification", false)
                 .commit();
     }
+
+
+
+    // ================================================================
+    // SISTEMA DE MONEDAS: COMPARTIR TARJETA
+    // ================================================================
+    private void verificarYCompartir() {
+        if (isProcessing) return;
+
+        SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        int tickets = prefs.getInt("skip_tickets", 0);
+        final int COSTO = 3;
+
+        if (tickets >= COSTO) {
+            mostrarDialogoMonedas("Share Card?", COSTO, tickets, () -> {
+                // A) PAGÓ: Descontar y Compartir directo (sin espera)
+                int nuevoSaldo = tickets - COSTO;
+                prefs.edit().putInt("skip_tickets", nuevoSaldo).apply();
+                actualizarMonedasNube(nuevoSaldo);
+                ejecutarAccionShare(); // <--- COMPARTE DIRECTO
+            }, () -> {
+                // B) PREFIRIÓ ANUNCIO
+                iniciarCompartirConAnuncio(); // <--- TU LÓGICA DE REWARDED AD
+            });
+        } else {
+            iniciarCompartirConAnuncio();
+        }
+    }
+
+    private void mostrarDialogoMonedas(String title, int cost, int balance, Runnable onPay, Runnable onAd) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_spend_coins, null);
+        builder.setView(view);
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
+
+        TextView tTitle = view.findViewById(R.id.txtDialogTitle);
+        TextView tBal = view.findViewById(R.id.txtCurrentBalance);
+        Button btnUse = view.findViewById(R.id.btnUseCoins);
+        TextView btnWatch = view.findViewById(R.id.btnWatchAd);
+
+        tTitle.setText(title);
+        tBal.setText("Balance: " + balance);
+        btnUse.setText("USE " + cost + " COINS");
+        ((TextView)view.findViewById(R.id.txtDialogMessage)).setText("Share without waiting?");
+
+        btnUse.setOnClickListener(v -> { dialog.dismiss(); onPay.run(); });
+        btnWatch.setOnClickListener(v -> { dialog.dismiss(); onAd.run(); });
+        dialog.show();
+    }
+
+    private void actualizarMonedasNube(int saldo) {
+        if (mAuth.getCurrentUser() != null) {
+            db.collection("users").document(mAuth.getCurrentUser().getUid()).update("coins", saldo);
+        }
+    }
+
 }

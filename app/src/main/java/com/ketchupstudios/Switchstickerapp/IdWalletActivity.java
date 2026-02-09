@@ -625,7 +625,7 @@ public class IdWalletActivity extends AppCompatActivity {
                         String cloudCode = documentSnapshot.getString("user_code");
                         String cloudThemeId = documentSnapshot.getString("selected_card_id");
                         String cloudThemeColor = documentSnapshot.getString("saved_theme_color");
-                        List<Map<String, String>> cloudGames = (List<Map<String, String>>) documentSnapshot.get("favorite_games");
+                        Object rawGames = documentSnapshot.get("favorite_games");
 
 
                         SharedPreferences prefs = getSharedPreferences("IdWalletPrefs", MODE_PRIVATE);
@@ -647,23 +647,33 @@ public class IdWalletActivity extends AppCompatActivity {
 
                         if (cloudThemeColor != null) editor.putString("saved_theme_color", cloudThemeColor);
 
-                        // --- GUARDAR JUEGOS DETALLADOS ---
-                        if (cloudGames != null) {
+                        // --- GUARDAR JUEGOS (ANTI-CRASH) ---
+                        if (rawGames instanceof List) {
+                            List<?> list = (List<?>) rawGames;
                             for (int i = 0; i < 3; i++) {
-                                if (i < cloudGames.size()) {
-                                    Map<String, String> g = cloudGames.get(i);
-                                    editor.putString("game_" + i + "_id", g.get("id"));
-                                    editor.putString("game_" + i + "_title", g.get("title"));
-                                    editor.putString("game_" + i + "_image", g.get("image"));
+                                if (i < list.size()) {
+                                    Object item = list.get(i);
+
+                                    if (item instanceof Map) {
+                                        // NUEVO
+                                        Map<String, String> g = (Map<String, String>) item;
+                                        editor.putString("game_" + i + "_id", g.get("id"));
+                                        editor.putString("game_" + i + "_title", g.get("title"));
+                                        editor.putString("game_" + i + "_image", g.get("image"));
+                                    } else if (item instanceof String) {
+                                        // VIEJO
+                                        editor.putString("game_" + i + "_id", (String) item);
+                                        // No guardamos título para obligar a actualizar después
+                                    }
                                 } else {
-                                    // Limpiar si no hay juego en esa posición
+                                    // Limpiar vacíos
                                     editor.remove("game_" + i + "_id");
                                     editor.remove("game_" + i + "_title");
                                     editor.remove("game_" + i + "_image");
                                 }
                             }
                         }
-                        // ---------------------------------
+                        // -----------------------------------
                         editor.apply();
 
                         try {
@@ -712,4 +722,63 @@ public class IdWalletActivity extends AppCompatActivity {
             ((View)imgFavGameFront.getParent()).setVisibility(View.INVISIBLE);
         }
     }
+
+
+
+
+    // ================================================================
+    // SISTEMA DE MONEDAS: GUARDAR DATOS
+    // ================================================================
+    private void verificarYGuardar() {
+        // 1. Revisar saldo
+        SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        int tickets = prefs.getInt("skip_tickets", 0);
+        final int COSTO = 3;
+
+        // 2. ¿Tiene suficientes monedas?
+        if (tickets >= COSTO) {
+            mostrarDialogoMonedas("Save Data?", COSTO, tickets, () -> {
+                // A) PAGÓ: Descontar y Guardar
+                int nuevoSaldo = tickets - COSTO;
+                prefs.edit().putInt("skip_tickets", nuevoSaldo).apply();
+                actualizarMonedasNube(nuevoSaldo);
+                ejecutarAccionSave(); // <--- TU MÉTODO DE GUARDAR
+            }, () -> {
+                // B) NO PAGÓ: Ver Anuncio
+                cargarAnuncioYGuardar(); // <--- TU MÉTODO DE ANUNCIO
+            });
+        } else {
+            // 3. No tiene saldo: Anuncio directo
+            cargarAnuncioYGuardar();
+        }
+    }
+
+    private void mostrarDialogoMonedas(String title, int cost, int balance, Runnable onPay, Runnable onAd) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_spend_coins, null);
+        builder.setView(view);
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
+
+        TextView tTitle = view.findViewById(R.id.txtDialogTitle);
+        TextView tBal = view.findViewById(R.id.txtCurrentBalance);
+        Button btnUse = view.findViewById(R.id.btnUseCoins);
+        TextView btnWatch = view.findViewById(R.id.btnWatchAd);
+
+        tTitle.setText(title);
+        tBal.setText("Balance: " + balance);
+        btnUse.setText("USE " + cost + " COINS");
+        ((TextView)view.findViewById(R.id.txtDialogMessage)).setText("Save changes instantly?");
+
+        btnUse.setOnClickListener(v -> { dialog.dismiss(); onPay.run(); });
+        btnWatch.setOnClickListener(v -> { dialog.dismiss(); onAd.run(); });
+        dialog.show();
+    }
+
+    private void actualizarMonedasNube(int saldo) {
+        if (mAuth.getCurrentUser() != null) {
+            db.collection("users").document(mAuth.getCurrentUser().getUid()).update("coins", saldo);
+        }
+    }
+
 }

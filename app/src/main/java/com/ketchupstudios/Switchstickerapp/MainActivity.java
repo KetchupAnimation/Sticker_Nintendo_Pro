@@ -1858,24 +1858,38 @@ public class MainActivity extends AppCompatActivity {
                             editor.putString("selected_card_id", cardTheme);
                         }
 
-                        // --- NUEVO: RECUPERAR JUEGOS FAVORITOS ---
-                        List<Map<String, String>> cloudGames = (List<Map<String, String>>) doc.get("favorite_games");
-                        if (cloudGames != null) {
-                            // Limpiamos los slots primero
-                            for(int i=0; i<3; i++) {
-                                editor.remove("game_"+i+"_id").remove("game_"+i+"_title").remove("game_"+i+"_image");
-                            }
-                            // Guardamos los que vienen de la nube
-                            for (int i = 0; i < cloudGames.size() && i < 3; i++) {
-                                Map<String, String> g = cloudGames.get(i);
-                                if (g != null) {
+                        // --- RECUPERAR JUEGOS (ANTI-CRASH & MIGRACIÓN) ---
+                        Object rawGames = doc.get("favorite_games");
+
+                        // 1. Limpiamos los slots primero
+                        for(int i=0; i<3; i++) editor.remove("game_"+i+"_id").remove("game_"+i+"_title").remove("game_"+i+"_image");
+
+                        if (rawGames instanceof List) {
+                            List<?> list = (List<?>) rawGames;
+
+                            for (int i = 0; i < list.size() && i < 3; i++) {
+                                Object item = list.get(i);
+
+                                if (item instanceof Map) {
+                                    // CASO A: FORMATO NUEVO (Mapas) -> Todo perfecto
+                                    Map<String, String> g = (Map<String, String>) item;
                                     editor.putString("game_" + i + "_id", g.get("id"));
                                     editor.putString("game_" + i + "_title", g.get("title"));
                                     editor.putString("game_" + i + "_image", g.get("image"));
                                 }
+                                else if (item instanceof String) {
+                                    // CASO B: FORMATO VIEJO (Solo IDs) -> Evitamos el Crash
+                                    String idViejo = (String) item;
+                                    if (!idViejo.isEmpty()) {
+                                        editor.putString("game_" + i + "_id", idViejo);
+                                        // Ponemos datos temporales para que no falle
+                                        editor.putString("game_" + i + "_title", "Game " + (i+1));
+                                        editor.putString("game_" + i + "_image", "");
+                                    }
+                                }
                             }
                         }
-                        // -----------------------------------------
+                        // -----------------------------------------------------
 
                         // Recuperar Lista de Amigos
                         List<String> friends = (List<String>) doc.get("friends");
