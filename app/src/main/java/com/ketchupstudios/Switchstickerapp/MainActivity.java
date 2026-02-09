@@ -55,6 +55,11 @@ import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.os.Build;
+import android.media.MediaPlayer;
+import android.content.Context;
 
 // JSON PARSING
 import org.json.JSONArray;
@@ -1608,6 +1613,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         sincronizarFavoritosDesdeNube();
+        reintentarSincronizacionMonedas();
         if(widgetAdapter != null) widgetAdapter.updateData();
         if (rvWallpapersHorizontal != null && rvWallpapersHorizontal.getAdapter() instanceof WallpaperAdapter) ((WallpaperAdapter) rvWallpapersHorizontal.getAdapter()).updateData();
         if (rvPremiumMixto != null && rvPremiumMixto.getAdapter() instanceof PremiumAdapter) ((PremiumAdapter) rvPremiumMixto.getAdapter()).updateData();
@@ -1780,12 +1786,37 @@ public class MainActivity extends AppCompatActivity {
         }).addOnFailureListener(e -> sincronizarFavoritosDesdeNube());
     }
 
-    // NUEVO: Helper para actualizar monedas cada vez que gastamos/ganamos
+    // VERSIÓN ROBUSTA: Si falla por internet, recuerda intentarlo luego
     private void actualizarMonedasEnNube(int nuevasMonedas) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             FirebaseFirestore.getInstance().collection("users").document(user.getUid())
-                    .update("coins", nuevasMonedas);
+                    .update("coins", nuevasMonedas)
+                    .addOnSuccessListener(aVoid -> {
+                        // Éxito: Ya estamos sincronizados
+                        getSharedPreferences("UserRewards", MODE_PRIVATE)
+                                .edit().putBoolean("needs_sync", false).apply();
+                    })
+                    .addOnFailureListener(e -> {
+                        // Fallo (Sin internet): Marcamos bandera para reintentar luego
+                        getSharedPreferences("UserRewards", MODE_PRIVATE)
+                                .edit().putBoolean("needs_sync", true).apply();
+                    });
+        } else {
+            // Si no está logueado, marcamos para subir apenas se loguee
+            getSharedPreferences("UserRewards", MODE_PRIVATE)
+                    .edit().putBoolean("needs_sync", true).apply();
+        }
+    }
+
+    private void reintentarSincronizacionMonedas() {
+        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        boolean necesitaSync = prefs.getBoolean("needs_sync", false);
+
+        // Solo intentamos si hay una deuda pendiente y tenemos usuario
+        if (necesitaSync && mAuth.getCurrentUser() != null) {
+            int saldoActual = prefs.getInt("skip_tickets", 0);
+            actualizarMonedasEnNube(saldoActual); // ¡Reintentar subida!
         }
     }
 
@@ -2031,6 +2062,33 @@ public class MainActivity extends AppCompatActivity {
         // CLICK: USAR MONEDAS
         btnUse.setOnClickListener(v -> {
             dialog.dismiss();
+
+            // --- INICIO CÓDIGO SENSORIAL ---
+            try {
+                // 1. SONIDO (Usando MediaPlayer estándar)
+                // Asegúrate que tu archivo se llame 'coin.mp3' (minúsculas) en la carpeta raw
+                MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
+                if (mp != null) {
+                    mp.setOnCompletionListener(MediaPlayer::release);
+                    mp.start();
+                }
+
+                // 2. VIBRACIÓN (Compatible con todos los Androids)
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        // Para celulares nuevos (Vibración nítida)
+                        vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        // Para celulares viejos
+                        vibrator.vibrate(50);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            // --- FIN CÓDIGO SENSORIAL ---
+
             if (onUseCoins != null) onUseCoins.run();
         });
 
