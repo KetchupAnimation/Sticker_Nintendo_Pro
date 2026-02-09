@@ -51,6 +51,12 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
+import android.media.MediaPlayer;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.os.Build;
+import android.content.Context;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -964,7 +970,29 @@ public class WalletHomeActivity extends AppCompatActivity {
         btnUse.setText("USE " + cost + " COINS");
         ((TextView)view.findViewById(R.id.txtDialogMessage)).setText("Share without waiting?");
 
-        btnUse.setOnClickListener(v -> { dialog.dismiss(); onPay.run(); });
+        btnUse.setOnClickListener(v -> {
+            dialog.dismiss();
+
+            // --- INICIO SONIDO Y VIBRACIÓN ---
+            try {
+                MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
+                if (mp != null) {
+                    mp.setOnCompletionListener(MediaPlayer::release);
+                    mp.start();
+                }
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        vibrator.vibrate(50);
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+            // ---------------------------------
+
+            onPay.run();
+        });
         btnWatch.setOnClickListener(v -> { dialog.dismiss(); onAd.run(); });
         dialog.show();
     }

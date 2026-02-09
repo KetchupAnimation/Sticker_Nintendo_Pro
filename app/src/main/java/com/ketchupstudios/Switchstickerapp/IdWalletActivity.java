@@ -21,6 +21,12 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.media.MediaPlayer;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.os.Build;
+import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -770,7 +776,29 @@ public class IdWalletActivity extends AppCompatActivity {
         btnUse.setText("USE " + cost + " COINS");
         ((TextView)view.findViewById(R.id.txtDialogMessage)).setText("Save changes instantly?");
 
-        btnUse.setOnClickListener(v -> { dialog.dismiss(); onPay.run(); });
+        btnUse.setOnClickListener(v -> {
+            dialog.dismiss();
+
+            // --- INICIO SONIDO Y VIBRACIÓN ---
+            try {
+                MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
+                if (mp != null) {
+                    mp.setOnCompletionListener(MediaPlayer::release);
+                    mp.start();
+                }
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        vibrator.vibrate(50);
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+            // ---------------------------------
+
+            onPay.run();
+        });
         btnWatch.setOnClickListener(v -> { dialog.dismiss(); onAd.run(); });
         dialog.show();
     }

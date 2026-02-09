@@ -22,6 +22,12 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 
+import android.media.MediaPlayer;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.os.Build;
+import android.content.Context;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -776,6 +782,21 @@ public class FullListActivity extends AppCompatActivity {
         btnUse.setText("USE " + cost + " COINS");
 
         btnUse.setOnClickListener(v -> {
+            try {
+                MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
+                if (mp != null) {
+                    mp.setOnCompletionListener(MediaPlayer::release);
+                    mp.start();
+                }
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        vibrator.vibrate(50);
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
             dialog.dismiss();
             if (onUseCoins != null) onUseCoins.run();
         });
