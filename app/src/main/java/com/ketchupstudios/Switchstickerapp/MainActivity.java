@@ -1006,7 +1006,6 @@ public class MainActivity extends AppCompatActivity {
 
             runOnUiThread(() -> {
                 progressBar.setVisibility(View.GONE);
-                // 🔥 AGREGA ESTA LÍNEA AQUÍ
                 verificarActualizacionForzada();
                 checkAndShowNews();
                 prepararVistaHome(finalPromo, finalTotalCount, finalStatusMap);
@@ -1826,11 +1825,11 @@ public class MainActivity extends AppCompatActivity {
         android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
         int tickets = prefs.getInt("skip_tickets", 0);
 
-        // 1. INICIAR LA ANIMACIÓN SUAVE
+        /* 1. INICIAR LA ANIMACIÓN SUAVE
         // Esto le dice al layout: "Anima cualquier cambio de tamaño que ocurra a continuación"
         if (cardCoinContainer != null && cardCoinContainer.getParent() instanceof android.view.ViewGroup) {
             android.transition.TransitionManager.beginDelayedTransition((android.view.ViewGroup) cardCoinContainer.getParent());
-        }
+        }*/
 
         // 2. CAMBIAR VISIBILIDAD
         if (tickets > 0) {
