@@ -964,14 +964,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             final int finalTotalCount = tempCount;
-            Config.totalWidgetsCount = tempCount; // <--- AGREGA ESTO
 
-// final Map<Integer, String> finalStatusMap = widgetStatusMap; <--- ESTO YA LO TIENES
-            Config.widgetStatusMap.putAll(widgetStatusMap); // <--- AGREGA ESTO
-            Config.promoData = promoData;
-            Config.widgetStatusMap.putAll(widgetStatusMap);
+
             Config.totalWidgetsCount = tempCount;
-            Config.dataLoaded = true; // <--- ¡MUY IMPORTANTE! Marcamos que ya tenemos datos
+            Config.widgetStatusMap.putAll(widgetStatusMap);
+            Config.promoData = promoData;  // <--- ESTA ES LA CLAVE para que no parpadee
+            Config.dataLoaded = true;      // <--- Confirma que ya hay datos
+
 
             runOnUiThread(() -> {
                 progressBar.setVisibility(View.GONE);
@@ -1233,20 +1232,32 @@ public class MainActivity extends AppCompatActivity {
                 rvStickersHorizontal.getAdapter().notifyDataSetChanged();
             }
 
-// 2. WALLPAPERS
+            // 2. WALLPAPERS
             if (rvWallpapersHorizontal.getAdapter() == null) {
                 rvWallpapersHorizontal.setAdapter(new WallpaperAdapter(finalHomeWallpapers, R.layout.item_wallpaper_fixed));
             } else {
                 ((WallpaperAdapter) rvWallpapersHorizontal.getAdapter()).updateData();
             }
 
-// 3. WIDGETS
+            // 3. WIDGETS
             if (rvWidgetGallery.getAdapter() == null) {
                 widgetAdapter = new WidgetGalleryAdapter(MainActivity.this, finalHomeWidgets, true, widgetStatusMap);
                 rvWidgetGallery.setAdapter(widgetAdapter);
             } else {
                 if (widgetAdapter != null) widgetAdapter.updateData();
             }
+
+            // 4. BATERÍA (Esto es lo que faltaba para que se vean)
+            if (rvBatteryHorizontal.getAdapter() == null) {
+                rvBatteryHorizontal.setAdapter(new BatteryThemeAdapter(this, finalHomeBattery, R.layout.item_battery_home, theme -> {
+                    Intent intent = new Intent(MainActivity.this, BatteryPreviewActivity.class);
+                    intent.putExtra("THEME_ID", theme.id);
+                    startActivity(intent);
+                }));
+            } else {
+                ((BatteryThemeAdapter) rvBatteryHorizontal.getAdapter()).updateData();
+            }
+
             isHomeInitialized = true;
         } else {
             // Si ya existe, solo actualizamos los datos suavemente (sin animación de caída)
