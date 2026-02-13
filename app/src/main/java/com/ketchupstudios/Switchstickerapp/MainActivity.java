@@ -751,6 +751,8 @@ public class MainActivity extends AppCompatActivity {
             if (txtEmpty != null) txtEmpty.setVisibility(View.GONE);
         }
 
+        configurarBotonColorFavorito(viewFavs);
+
         fragmentContainer.removeAllViews();
         fragmentContainer.addView(viewFavs);
     }
@@ -2352,6 +2354,88 @@ public class MainActivity extends AppCompatActivity {
         MobileAds.initialize(this, initializationStatus -> {
             cargarAnuncioIntersticial();
         });
+    }
+
+    // =========================================================
+    // LÓGICA DEL SELECTOR DE COLOR (INK COLOR)
+    // =========================================================
+
+    private void configurarBotonColorFavorito(View viewFavs) {
+        androidx.cardview.widget.CardView btnSetColor = viewFavs.findViewById(R.id.cardSetColor);
+        ImageView preview = viewFavs.findViewById(R.id.imgCurrentColorPreview);
+
+        if (btnSetColor == null || preview == null) return;
+
+        // Cargar color actual
+        android.content.SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        int savedColor = prefs.getInt("user_favorite_color", android.graphics.Color.LTGRAY);
+        preview.setBackgroundTintList(android.content.res.ColorStateList.valueOf(savedColor));
+
+        btnSetColor.setOnClickListener(v -> mostrarAdvancedColorPicker(preview));
+    }
+
+    private void mostrarAdvancedColorPicker(ImageView targetPreview) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_color_picker, null);
+        builder.setView(view);
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        View previewBox = view.findViewById(R.id.viewColorPreview);
+        android.widget.SeekBar seekR = view.findViewById(R.id.seekRed);
+        android.widget.SeekBar seekG = view.findViewById(R.id.seekGreen);
+        android.widget.SeekBar seekB = view.findViewById(R.id.seekBlue);
+        TextView txtR = view.findViewById(R.id.txtRedVal);
+        TextView txtG = view.findViewById(R.id.txtGreenVal);
+        TextView txtB = view.findViewById(R.id.txtBlueVal);
+
+        // Cargar estado actual
+        android.content.SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        int currentColor = prefs.getInt("user_favorite_color", android.graphics.Color.BLACK);
+
+        seekR.setProgress(android.graphics.Color.red(currentColor));
+        seekG.setProgress(android.graphics.Color.green(currentColor));
+        seekB.setProgress(android.graphics.Color.blue(currentColor));
+        previewBox.setBackgroundColor(currentColor);
+
+        // Listener universal
+        android.widget.SeekBar.OnSeekBarChangeListener listener = new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                int r = seekR.getProgress();
+                int g = seekG.getProgress();
+                int b = seekB.getProgress();
+                int newColor = android.graphics.Color.rgb(r, g, b);
+
+                previewBox.setBackgroundColor(newColor);
+                txtR.setText(String.valueOf(r));
+                txtG.setText(String.valueOf(g));
+                txtB.setText(String.valueOf(b));
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
+        };
+
+        seekR.setOnSeekBarChangeListener(listener);
+        seekG.setOnSeekBarChangeListener(listener);
+        seekB.setOnSeekBarChangeListener(listener);
+
+        view.findViewById(R.id.btnCancelColor).setOnClickListener(v -> dialog.dismiss());
+        view.findViewById(R.id.btnSaveColor).setOnClickListener(v -> {
+            int finalColor = android.graphics.Color.rgb(seekR.getProgress(), seekG.getProgress(), seekB.getProgress());
+
+            // Guardar preferencia
+            prefs.edit().putInt("user_favorite_color", finalColor).apply();
+
+            // Actualizar miniatura
+            if(targetPreview != null) {
+                targetPreview.setBackgroundTintList(android.content.res.ColorStateList.valueOf(finalColor));
+            }
+            Toast.makeText(this, "Ink Color Saved! 🎨", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
 

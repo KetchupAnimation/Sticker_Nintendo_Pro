@@ -524,7 +524,19 @@ public class StickerDetailsActivity extends AppCompatActivity {
         dialogCarga.show();
     }
 
-    private void cerrarCargando() { if (dialogCarga != null && dialogCarga.isShowing()) dialogCarga.dismiss(); }
+    // En StickerDetailsActivity.java
+
+    private void cerrarCargando() {
+        // FIX: Verificamos que la actividad siga viva y usamos try-catch
+        if (!isFinishing() && !isDestroyed() && dialogCarga != null && dialogCarga.isShowing()) {
+            try {
+                dialogCarga.dismiss();
+            } catch (IllegalArgumentException e) {
+                // Si la ventana ya no es válida, ignoramos el error para que no se cierre la app
+                Log.e("StickerDetails", "Error al cerrar diálogo: " + e.getMessage());
+            }
+        }
+    }
 
     public void mostrarPreviewGrande(StickerPack.Sticker s) {
         View v = getLayoutInflater().inflate(R.layout.dialog_sticker_preview, null);

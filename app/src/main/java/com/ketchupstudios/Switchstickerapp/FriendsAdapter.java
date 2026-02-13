@@ -545,6 +545,8 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
 
                         if (doc.exists()) {
                             boolean huboCambios = false;
+                            // --- CÓDIGO ANTERIOR QUE FALLABA ---
+                            /*
                             List<String> games = (List<String>) doc.get("favorite_games");
                             String g1 = "", g2 = "", g3 = "";
                             if (games != null) {
@@ -552,6 +554,33 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                                 if (games.size() > 1) g2 = games.get(1);
                                 if (games.size() > 2) g3 = games.get(2);
                             }
+                            */
+                            // --- CÓDIGO CORREGIDO Y SEGURO ---
+                            // Leemos como lista genérica (?) para aceptar cualquier cosa que venga
+                            List<?> rawGames = (List<?>) doc.get("favorite_games");
+                            String g1 = "", g2 = "", g3 = "";
+
+                            if (rawGames != null) {
+                                // Verificamos "instanceof String" para asegurarnos que sea texto antes de convertirlo
+                                if (rawGames.size() > 0 && rawGames.get(0) instanceof String) {
+                                    g1 = (String) rawGames.get(0);
+                                }
+                                if (rawGames.size() > 1 && rawGames.get(1) instanceof String) {
+                                    g2 = (String) rawGames.get(1);
+                                }
+                                if (rawGames.size() > 2 && rawGames.get(2) instanceof String) {
+                                    g3 = (String) rawGames.get(2);
+                                }
+                            }
+
+                            // Ahora seguimos con la comparación segura...
+                            if (!sonIguales(friend.game1, g1) || !sonIguales(friend.game2, g2) || !sonIguales(friend.game3, g3)) {
+                                friend.game1 = g1;
+                                friend.game2 = g2;
+                                friend.game3 = g3;
+                                huboCambios = true;
+                            }
+
                             if (!sonIguales(friend.game1, g1) || !sonIguales(friend.game2, g2) || !sonIguales(friend.game3, g3)) {
                                 friend.game1 = g1; friend.game2 = g2; friend.game3 = g3; huboCambios = true;
                             }

@@ -260,6 +260,14 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
         Palette.from(bitmap).generate(palette -> {
             if (palette == null) return;
             List<Integer> candidatos = new ArrayList<>();
+
+            // 1. [NUEVO] COLOR FAVORITO DEL USUARIO (PRIORIDAD MÁXIMA)
+            SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+            if (prefs.contains("user_favorite_color")) {
+                candidatos.add(prefs.getInt("user_favorite_color", Color.BLACK));
+            }
+
+
             try { candidatos.add(Color.parseColor("#e8dbd3")); candidatos.add(Color.parseColor("#2e2828")); } catch (Exception e) {}
             if (colorFondoActual != Color.WHITE) candidatos.add(colorFondoActual);
             if (palette.getVibrantSwatch() != null) candidatos.add(palette.getVibrantSwatch().getRgb());

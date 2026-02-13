@@ -137,6 +137,13 @@ public class BatteryPreviewActivity extends AppCompatActivity {
             if (palette == null) return;
             List<Integer> candidatos = new ArrayList<>();
 
+            // 1. [NUEVO] COLOR FAVORITO DEL USUARIO
+            SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE); // Nota: Usa AppPrefs que es global
+            if (prefs.contains("user_favorite_color")) {
+                candidatos.add(prefs.getInt("user_favorite_color", Color.BLACK));
+            }
+
+
             // 1. Color del JSON (Si no es blanco)
             candidatos.add(selectedColor);
 
