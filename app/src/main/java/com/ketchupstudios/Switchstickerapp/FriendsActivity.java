@@ -120,7 +120,7 @@ public class FriendsActivity extends AppCompatActivity {
 
         btnScan.setOnClickListener(v -> {
             if (friendList.size() >= MAX_FRIENDS) {
-                Toast.makeText(this, "List is full (Max 30)", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "List is full (Max 30)", Toast.LENGTH_SHORT).show();
             } else {
                 iniciarEscaner();
             }
@@ -132,7 +132,7 @@ public class FriendsActivity extends AppCompatActivity {
             if (friendList.size() < MAX_FRIENDS) {
                 rvFriends.postDelayed(this::iniciarEscaner, 300);
             } else {
-                Toast.makeText(this, "List is full (Max 30)", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "List is full (Max 30)", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -147,7 +147,7 @@ public class FriendsActivity extends AppCompatActivity {
 
             db.collection("users").document(user.getUid())
                     .set(data, SetOptions.merge()) // Merge para no borrar tus otros datos (juegos, nombre)
-                    .addOnFailureListener(e -> Toast.makeText(this, "Sync Error", Toast.LENGTH_SHORT).show());
+                    .addOnFailureListener(e -> CustomToast.makeText(this, "Sync Error", Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -224,7 +224,7 @@ public class FriendsActivity extends AppCompatActivity {
 
                 for (Friend f : friendList) {
                     if (f.code != null && f.code.trim().equalsIgnoreCase(code)) {
-                        Toast.makeText(this, "Friend already added!", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Friend already added!", Toast.LENGTH_SHORT).show();
                         return;
                     }
                 }
@@ -248,7 +248,7 @@ public class FriendsActivity extends AppCompatActivity {
 
                 adapter.notifyDataSetChanged();
                 actualizarUI();
-                Toast.makeText(this, "Friend Added!", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Friend Added!", Toast.LENGTH_SHORT).show();
 
                 // Animación
                 int newPosition = friendList.indexOf(newFriend);
@@ -265,11 +265,11 @@ public class FriendsActivity extends AppCompatActivity {
                 }
 
             } else {
-                Toast.makeText(this, "Invalid QR Format", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Invalid QR Format", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error reading QR", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Error reading QR", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -287,7 +287,7 @@ public class FriendsActivity extends AppCompatActivity {
                     subirAmigosANube();
 
                     actualizarUI();
-                    Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
+                    CustomToast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

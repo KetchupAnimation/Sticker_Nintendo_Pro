@@ -147,7 +147,7 @@ public class BatteryThemeAdapter extends RecyclerView.Adapter<BatteryThemeAdapte
                 if (theme.isLimitedTime) {
                     // MONETIZACIÓN: Ver anuncio primero
                     if (context instanceof MainActivity) {
-                        Toast.makeText(context, "Watch Ad to save this exclusive item!", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(context, "Watch Ad to save this exclusive item!", Toast.LENGTH_SHORT).show();
                         ((MainActivity) context).cargarAnuncioYEjecutar(() -> {
                             procederADarLike(themeId, holder, true);
                         });
@@ -217,7 +217,7 @@ public class BatteryThemeAdapter extends RecyclerView.Adapter<BatteryThemeAdapte
         // ---------------------------------
 
         if (isLimited) {
-            Toast.makeText(context, "Saved forever!", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(context, "Saved forever!", Toast.LENGTH_SHORT).show();
         }
     }
 

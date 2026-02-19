@@ -119,7 +119,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
                         i.setData(Uri.parse(link));
                         startActivity(i);
                     } catch (Exception e) {
-                        Toast.makeText(this, "Could not open link", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Could not open link", Toast.LENGTH_SHORT).show();
                     }
                 });
             } else {
@@ -136,7 +136,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
 
         btnAdd.setOnClickListener(v -> {
             if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < 3) {
-                Toast.makeText(this, "Wait! WhatsApp needs at least 3 unlocked stickers.", Toast.LENGTH_LONG).show();
+                CustomToast.makeText(this, "Wait! WhatsApp needs at least 3 unlocked stickers.", Toast.LENGTH_LONG).show();
             } else {
                 iniciarCargaDeAnuncio(btnAdd);
             }
@@ -227,7 +227,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
                     else {
                         // --- CASO FUTURO (LOCKED) ---
                         holder.layoutRewardBadge.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#212121")));
-                        holder.itemView.setOnClickListener(v -> Toast.makeText(StickerDetailsActivity.this, "Locked until Day " + diaActual, Toast.LENGTH_SHORT).show());
+                        holder.itemView.setOnClickListener(v -> CustomToast.makeText(StickerDetailsActivity.this, "Locked until Day " + diaActual, Toast.LENGTH_SHORT).show());
                     }
                 } else {
                     holder.layoutRewardBadge.setVisibility(View.GONE);
@@ -239,7 +239,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
                     holder.image.setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
                     holder.image.setAlpha(0.3f);
                     if (diaActual % 5 != 0) { // Si no es premio, mostramos toast simple
-                        holder.itemView.setOnClickListener(v -> Toast.makeText(StickerDetailsActivity.this, "Wait " + (diaActual - unlockedCount) + " days", Toast.LENGTH_SHORT).show());
+                        holder.itemView.setOnClickListener(v -> CustomToast.makeText(StickerDetailsActivity.this, "Wait " + (diaActual - unlockedCount) + " days", Toast.LENGTH_SHORT).show());
                     }
                 } else {
                     // DESBLOQUEADO (HOY O PASADO)
@@ -364,7 +364,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
                     mostrarDialogoGastarMonedas("Unlock Reward?", costo, tickets, () -> {
                         // PAGÓ CON MONEDAS
                         prefs.edit().putInt("skip_tickets", tickets - costo).apply();
-                        Toast.makeText(this, "Redeemed! Reward Unlocked 🔓", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Redeemed! Reward Unlocked 🔓", Toast.LENGTH_SHORT).show();
 
                         // Guardamos directo
                         reclamarRecompensaAhora(finalId, dia, dialog);
@@ -443,7 +443,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
         int t = prefs.getInt("skip_tickets", 0) + 1;
         prefs.edit().putInt("skip_tickets", t).apply();
-        Toast.makeText(this, "¡You win 1 coin! (Total: " + t + ")", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "¡You win 1 coin! (Total: " + t + ")", Toast.LENGTH_SHORT).show();
     }
 
     private void restaurarBoton(Button btn) {
@@ -485,7 +485,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
                 descargarArchivos();
                 runOnUiThread(() -> { cerrarCargando(); enviarIntentAWhatsApp(); });
             } catch (Exception e) {
-                runOnUiThread(() -> { cerrarCargando(); Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show(); });
+                runOnUiThread(() -> { cerrarCargando(); CustomToast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show(); });
             }
         }).start();
     }
@@ -513,7 +513,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
         i.putExtra("sticker_pack_name", Config.selectedPack.name);
         i.putExtra("sticker_pack_authority", AUTHORITY);
         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        try { startActivityForResult(i, 1); } catch (Exception e) { Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_LONG).show(); }
+        try { startActivityForResult(i, 1); } catch (Exception e) { CustomToast.makeText(this, "WhatsApp not installed", Toast.LENGTH_LONG).show(); }
     }
 
     private void mostrarCargando() {
@@ -582,7 +582,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
             public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
                 mInterstitialAd = null;
                 // Si falla al cargar (ej: sin internet), lo damos igual o muestras error
-                Toast.makeText(StickerDetailsActivity.this, "Ad failed, giving reward anyway...", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(StickerDetailsActivity.this, "Ad failed, giving reward anyway...", Toast.LENGTH_SHORT).show();
                 reclamarRecompensaAhora(wallId, dia, dialogPadre);
             }
         });
@@ -611,7 +611,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
         RecyclerView rvGrid = findViewById(R.id.rvStickersGrid);
         if (rvGrid.getAdapter() != null) rvGrid.getAdapter().notifyDataSetChanged();
 
-        Toast.makeText(this, "Reward added to favorites!", Toast.LENGTH_LONG).show();
+        CustomToast.makeText(this, "Reward added to favorites!", Toast.LENGTH_LONG).show();
     }
 
     // 3. DIÁLOGO DE MONEDAS (COPIADO DE MAINACTIVITY PARA QUE FUNCIONE AQUÍ)

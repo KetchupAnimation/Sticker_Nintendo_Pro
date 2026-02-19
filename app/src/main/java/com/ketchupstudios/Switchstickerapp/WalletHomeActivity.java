@@ -411,25 +411,25 @@ public class WalletHomeActivity extends AppCompatActivity {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
-                Toast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
-        Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show();
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
-                        Toast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
                         SharedPreferences prefs = getSharedPreferences("IdWalletPrefs", MODE_PRIVATE);
                         prefs.edit().putString("user_uid", user.getUid()).apply();
 
                         descargarDatosDeNube(user);
                     } else {
-                        Toast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -607,7 +607,7 @@ public class WalletHomeActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error sharing", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Error sharing", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -685,7 +685,7 @@ public class WalletHomeActivity extends AppCompatActivity {
 
             db.collection("users").document(user.getUid())
                     .set(data, com.google.firebase.firestore.SetOptions.merge())
-                    .addOnFailureListener(e -> Toast.makeText(this, "Error syncing friends", Toast.LENGTH_SHORT).show());
+                    .addOnFailureListener(e -> CustomToast.makeText(this, "Error syncing friends", Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -911,8 +911,8 @@ public class WalletHomeActivity extends AppCompatActivity {
 
             db.collection("users").document(user.getUid())
                     .set(update, com.google.firebase.firestore.SetOptions.merge())
-                    .addOnSuccessListener(aVoid -> Toast.makeText(this, getString(R.string.status_updated_msg), Toast.LENGTH_SHORT).show())
-                    .addOnFailureListener(e -> Toast.makeText(this, "Error syncing status", Toast.LENGTH_SHORT).show());
+                    .addOnSuccessListener(aVoid -> CustomToast.makeText(this, getString(R.string.status_updated_msg), Toast.LENGTH_SHORT).show())
+                    .addOnFailureListener(e -> CustomToast.makeText(this, "Error syncing status", Toast.LENGTH_SHORT).show());
         }
     }
 

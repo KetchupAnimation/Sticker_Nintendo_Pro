@@ -120,7 +120,7 @@ public class FullListActivity extends AppCompatActivity {
 
         btnRetryConnection.setOnClickListener(v -> {
             layoutConnectionError.setVisibility(View.GONE);
-            Toast.makeText(this, "Retrying...", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Retrying...", Toast.LENGTH_SHORT).show();
             new Thread(this::descargarJSON).start();
         });
 
@@ -174,7 +174,7 @@ public class FullListActivity extends AppCompatActivity {
             }
         }
 
-        Toast.makeText(this, "Loading...", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Loading...", Toast.LENGTH_SHORT).show();
         new Thread(this::descargarJSON).start();
     }
 
@@ -260,7 +260,7 @@ public class FullListActivity extends AppCompatActivity {
         if (tickets >= COSTO) {
             mostrarDialogoGastarMonedas("Unlock Premium?", COSTO, tickets, () -> {
                 prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
-                Toast.makeText(this, "Premium Unlocked! 💎", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Premium Unlocked! 💎", Toast.LENGTH_SHORT).show();
                 abrirWallpaperDetalles(wall);
             }, () -> {
                 cargarAnuncioYEjecutar(() -> abrirWallpaperDetalles(wall));
@@ -290,7 +290,7 @@ public class FullListActivity extends AppCompatActivity {
                 mostrarDialogoGastarMonedas("Skip Ad?", COSTO, tickets, () -> {
                     // Eligió GASTAR monedas
                     prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
-                    Toast.makeText(this, "Ad Skipped! ⚡", Toast.LENGTH_SHORT).show();
+                    CustomToast.makeText(this, "Ad Skipped! ⚡", Toast.LENGTH_SHORT).show();
 
                     // Reiniciamos contador y abrimos SIN anuncio
                     wallpaperClickCount = 0;
@@ -358,7 +358,7 @@ public class FullListActivity extends AppCompatActivity {
         if (tickets >= COST) {
             mostrarDialogoGastarMonedas("Unlock Pack?", COST, tickets, () -> {
                 prefs.edit().putInt("skip_tickets", tickets - COST).apply();
-                Toast.makeText(this, "Pack Unlocked! 🔓", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Pack Unlocked! 🔓", Toast.LENGTH_SHORT).show();
                 abrirPantallaDetalles(pack);
             }, () -> {
                 cargarAnuncioYEjecutar(() -> abrirPantallaDetalles(pack));
@@ -765,7 +765,7 @@ public class FullListActivity extends AppCompatActivity {
     }
 
     private void limpiarCacheYProtegerFavoritos() {
-        Toast.makeText(this, "Optimizing...", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Optimizing...", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
                 Glide.get(this).clearDiskCache();
@@ -783,7 +783,7 @@ public class FullListActivity extends AppCompatActivity {
                 }
                 final int finalRecuperados = recuperados;
                 runOnUiThread(() -> {
-                    Toast.makeText(FullListActivity.this, "Done! " + finalRecuperados + " favorites were protected.", Toast.LENGTH_LONG).show();
+                    CustomToast.makeText(FullListActivity.this, "Done! " + finalRecuperados + " favorites were protected.", Toast.LENGTH_LONG).show();
                 });
             } catch (Exception e) { e.printStackTrace(); }
         }).start();

@@ -199,7 +199,7 @@ public class WidgetGalleryAdapter extends RecyclerView.Adapter<WidgetGalleryAdap
                 if (isLimited) {
                     // MONETIZACIÓN
                     if (context instanceof MainActivity) {
-                        Toast.makeText(context, "Watch Ad to save this exclusive item!", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(context, "Watch Ad to save this exclusive item!", Toast.LENGTH_SHORT).show();
                         ((MainActivity) context).cargarAnuncioYEjecutar(() -> {
                             procederADarLike(imageId, holder, true);
                         });
@@ -246,7 +246,7 @@ public class WidgetGalleryAdapter extends RecyclerView.Adapter<WidgetGalleryAdap
         // ---------------------------------
 
         if (isLimited) {
-            Toast.makeText(context, "Saved forever!", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(context, "Saved forever!", Toast.LENGTH_SHORT).show();
         }
     }
 

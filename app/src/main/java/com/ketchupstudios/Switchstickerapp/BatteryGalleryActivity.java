@@ -147,7 +147,7 @@ public class BatteryGalleryActivity extends AppCompatActivity {
         if (mRewardedAd != null) {
             mRewardedAd.show(this, rewardItem -> rewardEarned = true);
         } else {
-            Toast.makeText(this, "Cargando anuncio...", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Cargando anuncio...", Toast.LENGTH_SHORT).show();
             descargarYGuardarTema(selectedTheme);
         }
     }
@@ -188,12 +188,12 @@ public class BatteryGalleryActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     pd.dismiss();
-                    Toast.makeText(this, "¡Tema aplicado! Revisa tu widget.", Toast.LENGTH_LONG).show();
+                    CustomToast.makeText(this, "¡Tema aplicado! Revisa tu widget.", Toast.LENGTH_LONG).show();
                     finish();
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> { pd.dismiss(); Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show(); });
+                runOnUiThread(() -> { pd.dismiss(); CustomToast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show(); });
             }
         }).start();
     }

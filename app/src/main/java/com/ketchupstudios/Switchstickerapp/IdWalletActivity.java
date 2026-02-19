@@ -518,7 +518,7 @@ public class IdWalletActivity extends AppCompatActivity {
         ocultarTeclado();
         btnSave.setText("Save Data");
         btnSave.setEnabled(true);
-        Toast.makeText(this, "Data Saved & Synced!", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Data Saved & Synced!", Toast.LENGTH_SHORT).show();
     }
 
     private void actualizarVistaPrevia() {
@@ -557,7 +557,7 @@ public class IdWalletActivity extends AppCompatActivity {
 
     private void abrirBuscador(int slot) {
         if (mAuth.getCurrentUser() == null) {
-            Toast.makeText(this, "Login first to edit favorites", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Login first to edit favorites", Toast.LENGTH_SHORT).show();
             return;
         }
         slotSeleccionado = slot;
@@ -576,7 +576,7 @@ public class IdWalletActivity extends AppCompatActivity {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
-                Toast.makeText(this, "Login Error", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Login Error", Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -612,7 +612,7 @@ public class IdWalletActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
-                        Toast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
                         descargarDatosDeNube(user);
                         checkUserStatus();
                     }
@@ -621,7 +621,7 @@ public class IdWalletActivity extends AppCompatActivity {
 
     private void descargarDatosDeNube(FirebaseUser user) {
         if (user == null) return;
-        Toast.makeText(this, "Syncing...", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Syncing...", Toast.LENGTH_SHORT).show();
 
         db.collection("users").document(user.getUid())
                 .get()

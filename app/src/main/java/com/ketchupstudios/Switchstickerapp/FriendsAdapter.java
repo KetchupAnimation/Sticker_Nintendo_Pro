@@ -193,7 +193,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
                 ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("Switch Code", friend.code);
                 clipboard.setPrimaryClip(clip);
-                Toast.makeText(context, context.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(context, context.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show();
             });
 
             btnDelete.setOnClickListener(v -> {
@@ -394,7 +394,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
             agregarStickerVisual(reaction.image);
 
             ocultarPanelReaccionesAnimado();
-            Toast.makeText(context, context.getString(R.string.toast_sticker_sent_cooldown), Toast.LENGTH_LONG).show();
+            CustomToast.makeText(context, context.getString(R.string.toast_sticker_sent_cooldown), Toast.LENGTH_LONG).show();
         }
 
         // --- CARGAR STICKERS GUARDADOS AL GIRAR ---

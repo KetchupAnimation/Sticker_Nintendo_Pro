@@ -52,9 +52,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
         app:cardCornerRadius="25dp"
         app:cardElevation="0dp"
         app:cardBackgroundColor="#FFFFFF"
+        app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toTopOf="@+id/buttonsContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -89,7 +92,7 @@
         android:id="@+id/buttonsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="40dp"
@@ -99,9 +102,10 @@
 
         <Button
             android:id="@+id/btnSupportArtist"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Support the artist!"
+            android:layout_weight="1"
+            android:text="Support"
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="#000000"
@@ -110,16 +114,17 @@
             android:stateListAnimator="@null"
             android:elevation="0dp"
             android:paddingVertical="14dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginEnd="6dp"
             android:textAllCaps="false"
             android:visibility="gone"
             tools:visibility="visible"/>
 
         <Button
             android:id="@+id/btnApply"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Apply Battery Theme"
+            android:layout_weight="1"
+            android:text="Set Theme"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#000000"
@@ -128,6 +133,7 @@
             android:stateListAnimator="@null"
             android:elevation="0dp"
             android:paddingVertical="14dp"
+            android:layout_marginStart="6dp"
             android:textAllCaps="false"/>
 
     </LinearLayout>

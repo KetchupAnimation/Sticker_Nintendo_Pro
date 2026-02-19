@@ -1,85 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="320dp"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="24dp"
     app:cardElevation="0dp"
     app:cardBackgroundColor="#FFFFFF">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Custom Color"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#000000"
-            android:layout_marginBottom="20dp"
-            android:layout_gravity="center"/>
-
-        <androidx.cardview.widget.CardView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            app:cardCornerRadius="40dp"
-            app:cardElevation="0dp"
-            android:layout_gravity="center"
-            android:layout_marginBottom="24dp">
-            <View
-                android:id="@+id/viewColorPreview"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#000000"/>
-        </androidx.cardview.widget.CardView>
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-            <TextView android:text="R" android:textStyle="bold" android:textColor="#F44336" android:layout_width="20dp" android:layout_height="wrap_content"/>
-            <SeekBar android:id="@+id/seekRed" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="255" android:progressTint="#F44336" android:thumbTint="#F44336"/>
-            <TextView android:id="@+id/txtRedVal" android:text="0" android:layout_width="35dp" android:layout_height="wrap_content" android:gravity="end" android:textSize="12sp"/>
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="12dp">
-            <TextView android:text="G" android:textStyle="bold" android:textColor="#4CAF50" android:layout_width="20dp" android:layout_height="wrap_content"/>
-            <SeekBar android:id="@+id/seekGreen" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="255" android:progressTint="#4CAF50" android:thumbTint="#4CAF50"/>
-            <TextView android:id="@+id/txtGreenVal" android:text="0" android:layout_width="35dp" android:layout_height="wrap_content" android:gravity="end" android:textSize="12sp"/>
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="12dp">
-            <TextView android:text="B" android:textStyle="bold" android:textColor="#2196F3" android:layout_width="20dp" android:layout_height="wrap_content"/>
-            <SeekBar android:id="@+id/seekBlue" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="255" android:progressTint="#2196F3" android:thumbTint="#2196F3"/>
-            <TextView android:id="@+id/txtBlueVal" android:text="0" android:layout_width="35dp" android:layout_height="wrap_content" android:gravity="end" android:textSize="12sp"/>
-        </LinearLayout>
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="30dp"
-            android:gravity="end">
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="24dp">
 
             <TextView
-                android:id="@+id/btnCancelColor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="CANCEL"
+                android:text="Custom Color"
+                android:textSize="22sp"
                 android:textStyle="bold"
-                android:textColor="#999999"
-                android:padding="12dp"
-                android:layout_marginEnd="8dp"/>
+                android:textColor="#000000"
+                android:layout_gravity="center"
+                android:layout_marginBottom="24dp"/>
 
-            <Button
-                android:id="@+id/btnSaveColor"
-                android:layout_width="wrap_content"
+            <androidx.cardview.widget.CardView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                app:cardCornerRadius="50dp"
+                app:cardElevation="4dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="32dp">
+                <View
+                    android:id="@+id/viewColorPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#000000"/>
+            </androidx.cardview.widget.CardView>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:text="R" android:textStyle="bold" android:textColor="#F44336" android:layout_width="24dp" android:layout_height="wrap_content" android:textSize="16sp"/>
+                <SeekBar android:id="@+id/seekRed" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="255" android:progressTint="#F44336" android:thumbTint="#F44336" android:layout_marginHorizontal="8dp"/>
+                <TextView android:id="@+id/txtRedVal" android:text="0" android:layout_width="30dp" android:layout_height="wrap_content" android:gravity="end" android:textSize="14sp" android:textStyle="bold" android:textColor="#555555"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="16dp">
+                <TextView android:text="G" android:textStyle="bold" android:textColor="#4CAF50" android:layout_width="24dp" android:layout_height="wrap_content" android:textSize="16sp"/>
+                <SeekBar android:id="@+id/seekGreen" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="255" android:progressTint="#4CAF50" android:thumbTint="#4CAF50" android:layout_marginHorizontal="8dp"/>
+                <TextView android:id="@+id/txtGreenVal" android:text="0" android:layout_width="30dp" android:layout_height="wrap_content" android:gravity="end" android:textSize="14sp" android:textStyle="bold" android:textColor="#555555"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="16dp">
+                <TextView android:text="B" android:textStyle="bold" android:textColor="#2196F3" android:layout_width="24dp" android:layout_height="wrap_content" android:textSize="16sp"/>
+                <SeekBar android:id="@+id/seekBlue" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:max="255" android:progressTint="#2196F3" android:thumbTint="#2196F3" android:layout_marginHorizontal="8dp"/>
+                <TextView android:id="@+id/txtBlueVal" android:text="0" android:layout_width="30dp" android:layout_height="wrap_content" android:gravity="end" android:textSize="14sp" android:textStyle="bold" android:textColor="#555555"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="SAVE"
-                android:backgroundTint="#000000"
-                android:textColor="#FFFFFF"/>
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:layout_marginTop="40dp"
+                android:gravity="end">
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/btnCancelColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CANCEL"
+                    android:textStyle="bold"
+                    android:textColor="#999999"
+                    android:padding="12dp"
+                    android:layout_marginEnd="16dp"/>
+
+                <Button
+                    android:id="@+id/btnSaveColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SAVE"
+                    android:backgroundTint="#000000"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="20dp"
+                    android:paddingHorizontal="24dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
 </androidx.cardview.widget.CardView>

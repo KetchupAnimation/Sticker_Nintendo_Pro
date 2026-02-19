@@ -234,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
                     .apply();
 
             // Opcional: Mostrar un mensajito
-            Toast.makeText(this, "🎁 Welcome Gift: 9 Coins!", Toast.LENGTH_LONG).show();
+            CustomToast.makeText(this, "🎁 Welcome Gift: 9 Coins!", Toast.LENGTH_LONG).show();
         }
         // -------------------------------------------------------
 
@@ -389,24 +389,24 @@ public class MainActivity extends AppCompatActivity {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
-                Toast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
-        Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show();
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
-                        Toast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Welcome " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
                         getSharedPreferences("IdWalletPrefs", MODE_PRIVATE).edit().putString("user_uid", user.getUid()).apply();
                         fusionarYSubirDatosLocales();
                         mostrarVistaFavoritos();
                     } else {
-                        Toast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -769,7 +769,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(this, "Could not open Instagram", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Could not open Instagram", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1112,7 +1112,7 @@ public class MainActivity extends AppCompatActivity {
         btnEnableCalendar.setOnClickListener(v -> androidx.core.app.ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.READ_CALENDAR}, 103));
         if (btnFixBattery != null) {
             btnFixBattery.setOnClickListener(v -> {
-                try { startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)); } catch (Exception e) { Toast.makeText(this, "Go to Settings -> Battery", Toast.LENGTH_LONG).show(); }
+                try { startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)); } catch (Exception e) { CustomToast.makeText(this, "Go to Settings -> Battery", Toast.LENGTH_LONG).show(); }
             });
         }
 
@@ -1453,7 +1453,7 @@ public class MainActivity extends AppCompatActivity {
                 prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
                 actualizarMonedasUI();
                 actualizarMonedasEnNube(tickets - COSTO); // Sincronizar
-                Toast.makeText(this, "Premium Unlocked! 💎", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Premium Unlocked! 💎", Toast.LENGTH_SHORT).show();
                 abrirWallpaperDetalles(wall);
             }, () -> {
                 // Prefirió ver anuncio recompensado
@@ -1485,7 +1485,7 @@ public class MainActivity extends AppCompatActivity {
                 mostrarDialogoGastarMonedas("Skip Ad?", COSTO, tickets, () -> {
                     // Eligió GASTAR monedas
                     prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
-                    Toast.makeText(this, "Ad Skipped! ⚡", Toast.LENGTH_SHORT).show();
+                    CustomToast.makeText(this, "Ad Skipped! ⚡", Toast.LENGTH_SHORT).show();
 
                     // Reiniciamos contador y abrimos SIN anuncio
                     wallpaperClickCount = 0;
@@ -1547,7 +1547,7 @@ public class MainActivity extends AppCompatActivity {
                 prefs.edit().putInt("skip_tickets", tickets - COST).apply();
                 actualizarMonedasUI();
                 actualizarMonedasEnNube(tickets - COST);
-                Toast.makeText(this, "Pack Unlocked! 🔓", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Pack Unlocked! 🔓", Toast.LENGTH_SHORT).show();
                 abrirPantallaDetalles(pack);
             }, () -> {
                 cargarAnuncioYEjecutar(() -> abrirPantallaDetalles(pack));
@@ -2287,7 +2287,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (Exception e) {}
 
-        Toast.makeText(this, "Daily Bonus claimed! +3 Coins 💰", Toast.LENGTH_LONG).show();
+        CustomToast.makeText(this, "Daily Bonus claimed! +3 Coins 💰", Toast.LENGTH_LONG).show();
     }
 
 
@@ -2431,11 +2431,16 @@ public class MainActivity extends AppCompatActivity {
             if(targetPreview != null) {
                 targetPreview.setBackgroundTintList(android.content.res.ColorStateList.valueOf(finalColor));
             }
-            Toast.makeText(this, "Ink Color Saved! 🎨", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Ink Color Saved! 🎨", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 
         dialog.show();
+
+        // [FIX] Forzar tamaño de tarjeta flotante (320dp de ancho)
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(convertDpToPx(320), android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
     }
 
 

@@ -287,7 +287,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
         mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, bundle);
 
         if (isLimited) {
-            Toast.makeText(context, "Saved forever in your account!", Toast.LENGTH_LONG).show();
+            CustomToast.makeText(context, "Saved forever in your account!", Toast.LENGTH_LONG).show();
         }
     }
 

@@ -95,7 +95,7 @@ public class SearchActivity extends AppCompatActivity {
                 if (tickets >= COSTO) {
                     mostrarDialogoGastarMonedas("Unlock Item?", COSTO, tickets, () -> {
                         prefs.edit().putInt("skip_tickets", tickets - COSTO).apply();
-                        Toast.makeText(this, "Unlocked with Coins! \uD83D\uDD13", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Unlocked with Coins! \uD83D\uDD13", Toast.LENGTH_SHORT).show();
                         abrirDetalles(item);
                     }, () -> {
                         cargarAnuncioYEjecutar(() -> abrirDetalles(item));
@@ -128,7 +128,7 @@ public class SearchActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Error opening item", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Error opening item", Toast.LENGTH_SHORT).show();
         }
     }
 

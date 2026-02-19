@@ -128,7 +128,7 @@ public class WidgetSelectionBottomSheet extends BottomSheetDialogFragment {
         } else if (isAdLoading) {
             // CASO 2: Cargando -> Avisar y activar MODO ESPERA AUTOMÁTICA
             isUserWaiting = true;
-            Toast.makeText(getContext(), "Cargando anuncio...", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(getContext(), "Cargando anuncio...", Toast.LENGTH_SHORT).show();
             // No hacemos nada más aquí, el "onAdLoaded" se encargará de lanzarlo solo.
 
         } else {

@@ -97,7 +97,7 @@ public class BatteryPreviewActivity extends AppCompatActivity {
                     Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(currentTheme.artistLink));
                     startActivity(i);
                 } catch (Exception e) {
-                    Toast.makeText(this, "Could not open link", Toast.LENGTH_SHORT).show();
+                    CustomToast.makeText(this, "Could not open link", Toast.LENGTH_SHORT).show();
                 }
             });
         } else {
@@ -413,7 +413,7 @@ public class BatteryPreviewActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (!isFinishing() && !isDestroyed()) {
                         try { if (pd != null && pd.isShowing()) pd.dismiss(); } catch (Exception e) {}
-                        Toast.makeText(this, "Theme successfully implemented!", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Theme successfully implemented!", Toast.LENGTH_SHORT).show();
                         solicitarPinWidget();
                         finish();
                     }
@@ -423,7 +423,7 @@ public class BatteryPreviewActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (!isFinishing() && !isDestroyed()) {
                         try { if (pd != null && pd.isShowing()) pd.dismiss(); } catch (Exception ex) {}
-                        Toast.makeText(this, "Error downloading", Toast.LENGTH_SHORT).show();
+                        CustomToast.makeText(this, "Error downloading", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -440,10 +440,10 @@ public class BatteryPreviewActivity extends AppCompatActivity {
             if (appWidgetManager.isRequestPinAppWidgetSupported()) {
                 appWidgetManager.requestPinAppWidget(myProvider, null, null);
             } else {
-                Toast.makeText(this, "Go to your home screen and add the widget manually.", Toast.LENGTH_LONG).show();
+                CustomToast.makeText(this, "Go to your home screen and add the widget manually.", Toast.LENGTH_LONG).show();
             }
         } else {
-            Toast.makeText(this, "Go to your home screen and add the widget manually.", Toast.LENGTH_LONG).show();
+            CustomToast.makeText(this, "Go to your home screen and add the widget manually.", Toast.LENGTH_LONG).show();
         }
     }
 }

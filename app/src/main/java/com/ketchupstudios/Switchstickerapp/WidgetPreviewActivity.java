@@ -182,10 +182,10 @@ public class WidgetPreviewActivity extends AppCompatActivity {
         Set<String> currentFavs = new HashSet<>(prefs.getStringSet("fav_wallpapers", new HashSet<>()));
         if (currentFavs.contains(imageId)) {
             currentFavs.remove(imageId);
-            Toast.makeText(this, "Removed from favorites", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Removed from favorites", Toast.LENGTH_SHORT).show();
         } else {
             currentFavs.add(imageId);
-            Toast.makeText(this, "Added to favorites", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Added to favorites", Toast.LENGTH_SHORT).show();
         }
         prefs.edit().putStringSet("fav_wallpapers", currentFavs).apply();
         favorites = currentFavs;
@@ -212,10 +212,10 @@ public class WidgetPreviewActivity extends AppCompatActivity {
             if (appWidgetManager.isRequestPinAppWidgetSupported()) {
                 appWidgetManager.requestPinAppWidget(myProvider, null, null);
             } else {
-                Toast.makeText(this, "Your launcher does not support this feature", Toast.LENGTH_SHORT).show();
+                CustomToast.makeText(this, "Your launcher does not support this feature", Toast.LENGTH_SHORT).show();
             }
         } else {
-            Toast.makeText(this, "Feature available only on Android 8+", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Feature available only on Android 8+", Toast.LENGTH_SHORT).show();
         }
     }
 }

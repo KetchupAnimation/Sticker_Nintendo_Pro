@@ -223,10 +223,10 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
 
         if (agregar) {
             favorites.add(imageUrl);
-            Toast.makeText(this, "Saved! ❤️", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Saved! ❤️", Toast.LENGTH_SHORT).show();
         } else {
             favorites.remove(imageUrl);
-            Toast.makeText(this, "Removed.", Toast.LENGTH_SHORT).show();
+            CustomToast.makeText(this, "Removed.", Toast.LENGTH_SHORT).show();
         }
         prefs.edit().putStringSet("fav_wallpapers_ids", favorites).apply();
 
@@ -313,7 +313,7 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
 
     // --- MÉTODOS DE APLICAR ---
     private void iniciarProcesoAplicar() {
-        if (bitmapDescargado == null) { Toast.makeText(this, "Wait...", Toast.LENGTH_SHORT).show(); return; }
+        if (bitmapDescargado == null) { CustomToast.makeText(this, "Wait...", Toast.LENGTH_SHORT).show(); return; }
         btnSet.setEnabled(false); btnSet.setText("Loading...");
         cargarAnuncioYMostrar();
     }
@@ -357,7 +357,7 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
     }
 
     private void procesarYAplicarFondo(int op) {
-        Toast.makeText(this, "Applying...", Toast.LENGTH_SHORT).show();
+        CustomToast.makeText(this, "Applying...", Toast.LENGTH_SHORT).show();
         btnSet.setEnabled(false);
         new Thread(() -> {
             try {
@@ -368,8 +368,8 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
                     int flag = (op==0)? WallpaperManager.FLAG_SYSTEM : (op==1)? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM|WallpaperManager.FLAG_LOCK;
                     wm.setBitmap(fin, null, true, flag);
                 } else wm.setBitmap(fin);
-                runOnUiThread(() -> { Toast.makeText(this, "Done!", Toast.LENGTH_SHORT).show(); btnSet.setEnabled(true); });
-            } catch (Exception e) { runOnUiThread(() -> { Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show(); btnSet.setEnabled(true); }); }
+                runOnUiThread(() -> { CustomToast.makeText(this, "Done!", Toast.LENGTH_SHORT).show(); btnSet.setEnabled(true); });
+            } catch (Exception e) { runOnUiThread(() -> { CustomToast.makeText(this, "Error", Toast.LENGTH_SHORT).show(); btnSet.setEnabled(true); }); }
         }).start();
     }
 
