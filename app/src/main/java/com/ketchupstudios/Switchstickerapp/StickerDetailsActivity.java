@@ -314,7 +314,8 @@ public class StickerDetailsActivity extends AppCompatActivity {
         // --- LÓGICA DE BÚSQUEDA DEL WALLPAPER (IGUAL QUE ANTES) ---
         String wallpaperId = "";
         Config.Wallpaper wallPremio = null;
-        String currentPackId = Config.selectedPack.identifier;
+        // [ARREGLO]: Pasamos el ID a minúsculas para que coincida con las tags del JSON
+        String currentPackId = Config.selectedPack.identifier.toLowerCase();
 
         for (Config.Wallpaper w : Config.wallpapers) {
             if (w.rewardDay.equals(String.valueOf(dia))) {

@@ -103,7 +103,13 @@ public class CalendarUpdateWorker extends Worker {
             if (eventoUsuarioObj != null && eventoUsuarioObj.rawTitle != null) {
                 String tituloLower = eventoUsuarioObj.rawTitle.toLowerCase();
                 for (String keyword : BIRTHDAY_KEYWORDS) {
-                    if (tituloLower.contains(keyword)) { esCumpleanos = true; break; }
+                    // [ARREGLO 2]: Solo activamos el fondo de cumpleaños si el evento es HOY
+                    if (tituloLower.contains(keyword)) {
+                        if (eventoUsuarioObj.isToday) {
+                            esCumpleanos = true;
+                        }
+                        break;
+                    }
                 }
             }
 
@@ -128,71 +134,76 @@ public class CalendarUpdateWorker extends Worker {
                 bottomBarText = formatearFechaJson(eventoJsonFuturo.date) + " - " + eventoJsonFuturo.title;
             }
 
-            // --- PINTAR ---
-            try {
-                int w = type.equals("2x2") ? 400 : 600;
-                int h = type.equals("2x2") ? 400 : 300;
-                int radius = type.equals("2x2") ? 30 : 40;
+            // [ARREGLO 3]: PINTAR TEXTOS PRIMERO PARA QUE EL JSON ROTO NO BLOQUEE LA UI
+            RemoteViews views = new RemoteViews(context.getPackageName(), layoutId);
 
-                com.bumptech.glide.load.Transformation<Bitmap> cropTransform;
-                if (type.equals("2x2")) cropTransform = new com.bumptech.glide.load.resource.bitmap.CenterInside();
-                else cropTransform = new com.bumptech.glide.load.resource.bitmap.CenterCrop();
+            views.setTextViewText(R.id.txtMonth, month);
+            views.setTextViewText(R.id.txtDay, day);
 
-                RequestOptions options = new RequestOptions()
-                        .format(DecodeFormat.PREFER_RGB_565)
-                        .override(w, h)
-                        .transform(cropTransform, new RoundedCorners(radius));
+            if (showCornerText) {
+                views.setViewVisibility(R.id.txtSpecialEvent, View.VISIBLE);
+                views.setTextViewText(R.id.txtSpecialEvent, cornerText);
+            } else {
+                views.setViewVisibility(R.id.txtSpecialEvent, View.GONE);
+            }
 
-                FutureTarget<Bitmap> futureTarget = Glide.with(context)
-                        .asBitmap()
-                        .load(imageUrl)
-                        .apply(options)
-                        .submit();
+            int idEventoInf = context.getResources().getIdentifier("txtUserEvent", "id", context.getPackageName());
+            int idLayoutInf = context.getResources().getIdentifier("layoutUserEvent", "id", context.getPackageName());
 
-                Bitmap bitmap = futureTarget.get();
-                RemoteViews views = new RemoteViews(context.getPackageName(), layoutId);
-
-                views.setImageViewBitmap(R.id.widgetBgImage, bitmap);
-                views.setTextViewText(R.id.txtMonth, month);
-                views.setTextViewText(R.id.txtDay, day);
-
-                if (showCornerText) {
-                    views.setViewVisibility(R.id.txtSpecialEvent, View.VISIBLE);
-                    views.setTextViewText(R.id.txtSpecialEvent, cornerText);
+            if (idEventoInf != 0 && idLayoutInf != 0) {
+                if (bottomBarText != null) {
+                    views.setViewVisibility(idLayoutInf, View.VISIBLE);
+                    views.setTextViewText(idEventoInf, bottomBarText);
+                    Intent calendarIntent = new Intent(Intent.ACTION_VIEW);
+                    calendarIntent.setData(Uri.parse("content://com.android.calendar/time/" + System.currentTimeMillis()));
+                    PendingIntent piCalendar = PendingIntent.getActivity(context, 1, calendarIntent, PendingIntent.FLAG_IMMUTABLE);
+                    views.setOnClickPendingIntent(idLayoutInf, piCalendar);
                 } else {
-                    views.setViewVisibility(R.id.txtSpecialEvent, View.GONE);
+                    views.setViewVisibility(idLayoutInf, View.GONE);
                 }
+            }
 
-                int idEventoInf = context.getResources().getIdentifier("txtUserEvent", "id", context.getPackageName());
-                int idLayoutInf = context.getResources().getIdentifier("layoutUserEvent", "id", context.getPackageName());
+            Intent appIntent = new Intent(context, FullListActivity.class);
+            appIntent.putExtra("TYPE", "widgets");
+            appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent piApp = PendingIntent.getActivity(context, 301, appIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.rootContainer, piApp);
 
-                if (idEventoInf != 0 && idLayoutInf != 0) {
-                    if (bottomBarText != null) {
-                        views.setViewVisibility(idLayoutInf, View.VISIBLE);
-                        views.setTextViewText(idEventoInf, bottomBarText);
-                        // El clic en el evento inferior SIGUE abriendo el calendario
-                        Intent calendarIntent = new Intent(Intent.ACTION_VIEW);
-                        calendarIntent.setData(Uri.parse("content://com.android.calendar/time/" + System.currentTimeMillis()));
-                        PendingIntent piCalendar = PendingIntent.getActivity(context, 1, calendarIntent, PendingIntent.FLAG_IMMUTABLE);
-                        views.setOnClickPendingIntent(idLayoutInf, piCalendar);
-                    } else {
-                        views.setViewVisibility(idLayoutInf, View.GONE);
-                    }
-                }
+            // --- PINTAR LA IMAGEN CON PROTECCIÓN ANTI-CRASH ---
+            int w = type.equals("2x2") ? 400 : 600;
+            int h = type.equals("2x2") ? 400 : 300;
+            int radius = type.equals("2x2") ? 30 : 40;
 
-                // --- CAMBIO AQUÍ: Redirigir el fondo a la Galería de Widgets ---
-                Intent appIntent = new Intent(context, FullListActivity.class);
-                appIntent.putExtra("TYPE", "widgets");
-                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            com.bumptech.glide.load.Transformation<Bitmap> cropTransform = type.equals("2x2")
+                    ? new com.bumptech.glide.load.resource.bitmap.CenterInside()
+                    : new com.bumptech.glide.load.resource.bitmap.CenterCrop();
 
-                PendingIntent piApp = PendingIntent.getActivity(context, 301, appIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-                views.setOnClickPendingIntent(R.id.rootContainer, piApp);
-                // -------------------------------------------------------------
+            RequestOptions options = new RequestOptions()
+                    .format(DecodeFormat.PREFER_RGB_565)
+                    .override(w, h)
+                    .transform(cropTransform, new RoundedCorners(radius));
 
-                appWidgetManager.updateAppWidget(id, views);
+            try {
+                FutureTarget<Bitmap> futureTarget = Glide.with(context).asBitmap().load(imageUrl).apply(options).submit();
+                Bitmap bitmap = futureTarget.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                views.setImageViewBitmap(R.id.widgetBgImage, bitmap);
                 Glide.with(context).clear(futureTarget);
 
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {
+                // Si la imagen del JSON falla o no existe, pintamos un fondo por defecto
+                e.printStackTrace();
+                try {
+                    int index = obtenerIndiceMatematico(prefs, id);
+                    String fallbackUrl = GITHUB_BASE_URL + type + "/BG_W_" + String.format("%02d", index) + ".png";
+                    FutureTarget<Bitmap> fbTarget = Glide.with(context).asBitmap().load(fallbackUrl).apply(options).submit();
+                    Bitmap fbBitmap = fbTarget.get(5, java.util.concurrent.TimeUnit.SECONDS);
+                    views.setImageViewBitmap(R.id.widgetBgImage, fbBitmap);
+                    Glide.with(context).clear(fbTarget);
+                } catch (Exception ex) { ex.printStackTrace(); }
+            }
+
+            // Actualizamos siempre, sin importar si la imagen cargó
+            appWidgetManager.updateAppWidget(id, views);
         }
     }
 
@@ -213,7 +224,6 @@ public class CalendarUpdateWorker extends Worker {
         }
     }
 
-    // --- MÉTODOS AUXILIARES (Sin cambios) ---
     private SpecialEvent buscarEventoJsonExacto(String todayKey) {
         try {
             JSONObject json = descargarJson();
@@ -229,6 +239,7 @@ public class CalendarUpdateWorker extends Worker {
         } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
+
     private SpecialEvent buscarEventoJsonFuturo() {
         try {
             List<String> next7Days = new ArrayList<>();
@@ -254,6 +265,7 @@ public class CalendarUpdateWorker extends Worker {
         } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
+
     private JSONObject descargarJson() {
         try {
             URL url = new URL(JSON_URL + "?t=" + System.currentTimeMillis());
@@ -266,6 +278,7 @@ public class CalendarUpdateWorker extends Worker {
             return new JSONObject(result.toString());
         } catch(Exception e) { return null; }
     }
+
     private String formatearFechaJson(String dateJson) {
         try {
             SimpleDateFormat inFormat = new SimpleDateFormat("MM-dd", Locale.US);
@@ -282,6 +295,7 @@ public class CalendarUpdateWorker extends Worker {
         } catch (Exception e) { }
         return dateJson;
     }
+
     private UserCalendarEvent obtenerProximoEventoUsuarioObj(Context context) {
         try {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
@@ -295,28 +309,60 @@ public class CalendarUpdateWorker extends Worker {
             Uri.Builder builder = uri.buildUpon();
             ContentUris.appendId(builder, start);
             ContentUris.appendId(builder, end);
-            String[] projection = new String[]{ CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN };
+
+            // [ARREGLO 1]: AGREGAR 'ALL_DAY' PARA ARREGLAR LA ZONA HORARIA
+            String[] projection = new String[]{
+                    CalendarContract.Instances.TITLE,
+                    CalendarContract.Instances.BEGIN,
+                    CalendarContract.Instances.ALL_DAY
+            };
             String sortOrder = CalendarContract.Instances.BEGIN + " ASC LIMIT 1";
+
             try (Cursor cursor = cr.query(builder.build(), projection, null, null, sortOrder)) {
                 if (cursor != null && cursor.moveToFirst()) {
                     String titulo = cursor.getString(0);
                     long fechaMilis = cursor.getLong(1);
+                    boolean isAllDay = cursor.getInt(2) == 1;
+
+                    // VERIFICAR SI EL EVENTO ES HOY PARA EL PASTEL
+                    SimpleDateFormat compareFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+                    String todayStr = compareFormat.format(new Date());
+
+                    SimpleDateFormat eventFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+                    if (isAllDay) {
+                        eventFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                    }
+                    String eventDateStr = eventFormat.format(new Date(fechaMilis));
+                    boolean isToday = todayStr.equals(eventDateStr);
+
+                    // FORMATEAR EL TEXTO DEL EVENTO PARA MOSTRARLO EN EL WIDGET
                     SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd", new Locale("es", "ES"));
+                    if (isAllDay) {
+                        sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                    }
                     String fechaStr = sdf.format(new Date(fechaMilis));
                     if (!fechaStr.isEmpty()) fechaStr = fechaStr.substring(0, 1).toUpperCase() + fechaStr.substring(1);
-                    return new UserCalendarEvent(titulo, fechaStr + " - " + titulo);
+
+                    return new UserCalendarEvent(titulo, fechaStr + " - " + titulo, isToday);
                 }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
+
     private static class SpecialEvent {
         String title, imageFile, date;
         SpecialEvent(String t, String i, String d) { title = t; imageFile = i; date = d; }
     }
+
     private static class UserCalendarEvent {
         String rawTitle;
         String formattedText;
-        UserCalendarEvent(String raw, String fmt) { rawTitle = raw; formattedText = fmt; }
+        boolean isToday; // Agregado para el arreglo del fondo de cumpleaños
+        UserCalendarEvent(String raw, String fmt, boolean today) {
+            rawTitle = raw;
+            formattedText = fmt;
+            isToday = today;
+        }
     }
 }

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="#FFFFFF">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/imgGachaBg"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/gacha_bg"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/btnCloseGacha"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_delete"
+            app:tint="#000000"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/txtGachaTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Weekly Gacha!"
+            android:textColor="#000000"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/txtGachaSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Insert 5 Coin to play"
+            android:textColor="#888888"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/txtGachaTitle" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guidelineCenter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <ImageView
+            android:id="@+id/imgMachineLeft"
+            android:layout_width="160dp"
+            android:layout_height="360dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="-4dp"
+            android:layout_marginEnd="-3dp"
+            android:scaleType="fitEnd"
+            android:src="@drawable/gacha_izq"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/guidelineCenter"
+            app:layout_constraintTop_toBottomOf="@+id/txtGachaSubtitle" />
+
+        <ImageView
+            android:id="@+id/imgKnobLeft"
+            android:layout_width="40dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@drawable/gacha_btizq"
+            app:layout_constraintBottom_toBottomOf="@+id/imgMachineLeft"
+            app:layout_constraintEnd_toEndOf="@+id/imgMachineLeft"
+            app:layout_constraintHorizontal_bias="0.54"
+            app:layout_constraintStart_toStartOf="@+id/imgMachineLeft"
+            app:layout_constraintTop_toTopOf="@+id/imgMachineLeft"
+            app:layout_constraintVertical_bias="0.437" />
+
+        <ImageView
+            android:id="@+id/imgMachineRight"
+            android:layout_width="160dp"
+            android:layout_height="360dp"
+            android:layout_marginBottom="-4dp"
+            android:layout_marginStart="-2dp"
+            android:scaleType="fitStart"
+            android:src="@drawable/gacha_drc"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/guidelineCenter"
+            app:layout_constraintTop_toTopOf="@+id/imgMachineLeft" />
+
+        <ImageView
+            android:id="@+id/imgKnobRight"
+            android:layout_width="40dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@drawable/gacha_btdrc"
+            app:layout_constraintBottom_toBottomOf="@+id/imgMachineRight"
+            app:layout_constraintEnd_toEndOf="@+id/imgMachineRight"
+            app:layout_constraintHorizontal_bias="0.45"
+            app:layout_constraintStart_toStartOf="@+id/imgMachineRight"
+            app:layout_constraintTop_toTopOf="@+id/imgMachineRight"
+            app:layout_constraintVertical_bias="0.437" />
+
+        <ImageView
+            android:id="@+id/imgGachaGlow"
+            android:layout_width="170dp"
+            android:layout_height="170dp"
+            android:alpha="0"
+            android:src="@drawable/bg_circle_white"
+            app:layout_constraintBottom_toBottomOf="@+id/imgCapsule"
+            app:layout_constraintEnd_toEndOf="@+id/imgCapsule"
+            app:layout_constraintStart_toStartOf="@+id/imgCapsule"
+            app:layout_constraintTop_toTopOf="@+id/imgCapsule" />
+
+        <ImageView
+            android:id="@+id/imgCapsule"
+            android:layout_width="121dp"
+            android:layout_height="115dp"
+            android:alpha="0"
+            android:src="@drawable/gacha_cerrado"
+            app:layout_constraintBottom_toBottomOf="@+id/imgMachineLeft"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/imgMachineLeft"
+            app:layout_constraintVertical_bias="0.85"
+            tools:alpha="1" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>
