@@ -69,6 +69,13 @@ import android.os.Build;
 import android.media.MediaPlayer;
 import android.content.Context;
 
+import android.app.Dialog;
+import android.animation.ObjectAnimator;
+import android.content.SharedPreferences;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+
 // JSON PARSING
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -151,7 +158,11 @@ public class MainActivity extends AppCompatActivity {
     // --- CONTROLADOR DEL BOTÓN ATRÁS Y DATOS GLOBALES ---
     private OnBackPressedCallback backCallback;
     private boolean isHome = true;
-    private boolean isHomeInitialized = false; // Nos dirá si ya se mostró la animación inicial
+    private static boolean isGachaMostrandose = false;
+    private static boolean isDailyBonusActive = false;
+    private static boolean isDailyBonusMostradoEnSesion = false;
+
+    private boolean isHomeInitialized = false;
     private Map<Integer, String> widgetStatusMap = new HashMap<>();
 
     // --- VARIABLES LOGIN ---
@@ -219,6 +230,13 @@ public class MainActivity extends AppCompatActivity {
         // --- NUEVO: CLICK PARA EXPLICACIÓN DE MONEDAS ---
         if (cardCoinContainer != null) {
             cardCoinContainer.setOnClickListener(v -> mostrarExplicacionMonedas());
+            // EL ATAJO SECRETO: Mantener presionado abre el Gacha
+            /*
+            cardCoinContainer.setOnLongClickListener(v -> {
+                mostrarDialogGacha();
+                return true;
+            });
+             */
         }
         // -----------------------------------------------
         //  REGALO DE BIENVENIDA (3 MONEDAS INICIALES)
@@ -372,6 +390,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        cargarDatosGacha();
         inicializarConsentimientoYAnuncios();
     }
 
@@ -685,9 +704,32 @@ public class MainActivity extends AppCompatActivity {
         android.content.SharedPreferences appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         Set<String> favWallIds = appPrefs.getStringSet("fav_wallpapers_ids", new HashSet<>());
         List<Config.Wallpaper> favWallList = new ArrayList<>();
+
+        // 1. Buscar en los Wallpapers normales
         if (Config.wallpapers != null) {
             for (Config.Wallpaper w : Config.wallpapers) {
                 if (favWallIds.contains(w.imageFile)) favWallList.add(w);
+            }
+        }
+
+        // 2. Buscar en los Wallpapers exclusivos del Gacha
+        if (Config.gachaWallpapersList != null) {
+            for (GachaItem g : Config.gachaWallpapersList) {
+                if (favWallIds.contains(g.image)) {
+                    // Evitar duplicados en memoria si la app acaba de inyectar el premio
+                    boolean alreadyAdded = false;
+                    for (Config.Wallpaper w : favWallList) {
+                        if (w.imageFile.equals(g.image)) { alreadyAdded = true; break; }
+                    }
+                    if (!alreadyAdded) {
+                        // Lo convertimos en un formato que tu galería entienda
+                        Config.Wallpaper gachaWall = new Config.Wallpaper(g.id, g.title, g.image, g.publisher != null ? g.publisher : "UnTal3D", false, false, g.artistLink);
+                        gachaWall.colorBg = g.colorBg;
+                        gachaWall.isHidden = true;
+                        gachaWall.isGacha = true;
+                        favWallList.add(gachaWall);
+                    }
+                }
             }
         }
 
@@ -1574,6 +1616,7 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("is_limited", wall.isLimitedTime);
         intent.putExtra("is_hidden", wall.isHidden);
         // -----------------------------------
+        intent.putExtra("is_gacha", wall.isGacha || (wall.imageFile != null && wall.imageFile.startsWith("Wallpaper/")));
         startActivity(intent);
     }
 
@@ -2212,22 +2255,31 @@ public class MainActivity extends AppCompatActivity {
     // ===============================================================
 
     private void verificarDailyLogin() {
-        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        // Le damos 1.5 segundos para que la app cargue todo antes de molestar al usuario
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
 
-        // Obtenemos la fecha de hoy (formato AAAA-MM-DD)
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
-        String hoy = sdf.format(new Date());
+            // Si la actividad se está cerrando o ya lo mostramos en este arranque, no hacer nada
+            if (isFinishing() || isDestroyed() || isDailyBonusMostradoEnSesion) return;
 
-        // Obtenemos la última fecha en que reclamó
-        String ultimaFecha = prefs.getString("last_daily_claim", "");
+            android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+            // Obtenemos la fecha de hoy (formato AAAA-MM-DD)
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+            String hoy = sdf.format(new Date());
 
-        // Si la fecha es diferente, mostramos el regalo
-        if (!hoy.equals(ultimaFecha)) {
-            mostrarDialogoDailyBonus(hoy);
-        }
+            // Obtenemos la última fecha en que reclamó
+            String ultimaFecha = prefs.getString("last_daily_claim", "");
+
+            // Si la fecha es diferente, mostramos el regalo
+            if (!hoy.equals(ultimaFecha)) {
+                isDailyBonusMostradoEnSesion = true; // Marcamos que ya se procesó en esta sesión
+                mostrarDialogoDailyBonus(hoy);
+            }
+        }, 1500); // 1.5 segundos de espera
     }
 
     private void mostrarDialogoDailyBonus(String fechaHoy) {
+        if (isDailyBonusActive || isFinishing() || isDestroyed()) return;
+        isDailyBonusActive = true;
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_daily_bonus, null);
         builder.setView(view);
@@ -2239,6 +2291,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Evitamos que lo cierren tocando fuera (para que decidan sí o no)
         dialog.setCancelable(false);
+
+        // 👇 2. MAGIA DE PRIORIDAD: Al cerrarse, liberamos y llamamos al Gacha
+        dialog.setOnDismissListener(d -> {
+            isDailyBonusActive = false;
+            // Damos 800 milisegundos de respiro para que la pantalla se limpie
+            // y no haya cruce de animaciones antes de abrir el Gacha.
+            new Handler(Looper.getMainLooper()).postDelayed(() -> revisarGachaSemanal(), 800);
+        });
+
 
         Button btnClaim = view.findViewById(R.id.btnClaimBonus);
         TextView btnClose = view.findViewById(R.id.btnCloseBonus);
@@ -2440,6 +2501,467 @@ public class MainActivity extends AppCompatActivity {
         // [FIX] Forzar tamaño de tarjeta flotante (320dp de ancho)
         if (dialog.getWindow() != null) {
             dialog.getWindow().setLayout(convertDpToPx(320), android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+   // SISTEMA GACHA
+   private void cargarDatosGacha() {
+       ExecutorService executor = Executors.newSingleThreadExecutor();
+       executor.execute(() -> {
+           try {
+               // Añadimos un parámetro de tiempo para evitar la caché de GitHub
+               URL url = new URL(Config.GACHA_JSON_URL + "?t=" + System.currentTimeMillis());
+               HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+               conn.setConnectTimeout(5000);
+
+               BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+               StringBuilder jsonResult = new StringBuilder();
+               String line;
+               while ((line = reader.readLine()) != null) {
+                   jsonResult.append(line);
+               }
+               reader.close();
+
+               JSONObject jsonObject = new JSONObject(jsonResult.toString());
+               Config.gachaWallpapersList.clear();
+               Config.gachaWidgetsList.clear();
+
+               // Cargar Wallpapers Gacha
+               if (jsonObject.has("gacha_wallpapers")) {
+                   JSONArray walls = jsonObject.getJSONArray("gacha_wallpapers");
+                   for (int i = 0; i < walls.length(); i++) {
+                       // ... (Tu código de parseo sigue igual) ...
+                       JSONObject w = walls.getJSONObject(i);
+                       GachaItem item = new GachaItem();
+                       item.id = w.getString("id");
+                       item.type = "wallpaper";
+                       item.title = w.getString("title");
+                       item.image = w.getString("image");
+                       item.rarity = w.getString("rarity");
+                       item.colorBg = w.optString("ColorBG", "#000000");
+                       item.publisher = w.optString("publisher", "UnTal3D");
+                       item.artistLink = w.optString("artist_link", "");
+                       if (w.has("tags")) {
+                           JSONArray tagsArray = w.getJSONArray("tags");
+                           for (int j = 0; j < tagsArray.length(); j++) {
+                               item.tags.add(tagsArray.getString(j).toLowerCase());
+                           }
+                       }
+                       Config.gachaWallpapersList.add(item);
+                   }
+               }
+
+               // Cargar Widgets Gacha
+               if (jsonObject.has("gacha_widgets")) {
+                   JSONArray widgets = jsonObject.getJSONArray("gacha_widgets");
+                   for (int i = 0; i < widgets.length(); i++) {
+                       JSONObject wi = widgets.getJSONObject(i);
+                       GachaItem item = new GachaItem();
+                       item.id = wi.getString("id");
+                       item.type = "widget";
+                       item.image = wi.getString("image");
+                       item.rarity = wi.getString("rarity");
+                       Config.gachaWidgetsList.add(item);
+                   }
+               }
+
+               // 👇 SOLUCIÓN: Llamamos a la revisión cuando los datos YA ESTÁN LISTOS 👇
+               runOnUiThread(() -> {
+                   revisarGachaSemanal();
+               });
+
+           } catch (Exception e) {
+               e.printStackTrace();
+           }
+       });
+   }
+
+
+    public void mostrarDialogGacha() {
+        if (isGachaMostrandose || isFinishing() || isDestroyed()) {
+            return; // Si ya hay uno, o si la app se está reiniciando, abortamos.
+        }
+        isGachaMostrandose = true;
+
+        android.app.Dialog gachaDialog = new android.app.Dialog(this);
+
+        // Liberamos el candado automáticamente cuando la ventana se cierre
+        gachaDialog.setOnDismissListener(dialog -> {
+            isGachaMostrandose = false;
+        });
+
+        gachaDialog.setContentView(R.layout.dialog_gacha);
+        gachaDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        gachaDialog.setCancelable(false);
+
+        ImageView btnClose = gachaDialog.findViewById(R.id.btnCloseGacha);
+        ImageView imgKnobLeft = gachaDialog.findViewById(R.id.imgKnobLeft);
+        ImageView imgKnobRight = gachaDialog.findViewById(R.id.imgKnobRight);
+        ImageView imgCapsule = gachaDialog.findViewById(R.id.imgCapsule);
+        ImageView imgGachaGlow = gachaDialog.findViewById(R.id.imgGachaGlow);
+
+        // --- LÓGICA DE CÁPSULAS MULTICOLOR ---
+        int[] capsulasCerradas = {
+                R.drawable.gacha_rojo_cerrado, R.drawable.gacha_azul_cerrado,
+                R.drawable.gacha_verde_cerrado, R.drawable.gacha_morado_cerrado,
+                R.drawable.gacha_blanco_cerrado, R.drawable.gacha_amarillo_cerrado
+        };
+        int[] capsulasAbiertas = {
+                R.drawable.gacha_rojo_abierto, R.drawable.gacha_azul_abierto,
+                R.drawable.gacha_verde_abierto, R.drawable.gacha_morado_abierto,
+                R.drawable.gacha_blanco_abierto, R.drawable.gacha_amarillo_abierto
+        };
+
+        // Elegimos un número al azar entre 0 y 5
+        int colorElegido = new java.util.Random().nextInt(capsulasCerradas.length);
+
+        imgCapsule.setAlpha(0f);
+        // Colocamos la versión CERRADA del color que tocó
+        imgCapsule.setImageResource(capsulasCerradas[colorElegido]);
+
+        btnClose.setOnClickListener(v -> gachaDialog.dismiss());
+
+        View.OnClickListener jugarGachaClick = v -> {
+            android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+            int monedasActuales = prefs.getInt("skip_tickets", 0);
+
+            if (monedasActuales >= 5) {
+                prefs.edit().putInt("skip_tickets", monedasActuales - 5).apply();
+                actualizarMonedasUI();
+                actualizarMonedasEnNube(monedasActuales - 5);
+
+                CustomToast.makeText(this, "5 Coins Inserted! Good Luck!", Toast.LENGTH_SHORT).show();
+
+                imgKnobLeft.setEnabled(false);
+                imgKnobRight.setEnabled(false);
+                btnClose.setEnabled(false);
+
+                // 👇 NUEVO: Registramos que ya jugó para que no lo moleste en 7 días 👇
+                getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putLong("last_gacha_play_time", System.currentTimeMillis()).apply();
+
+                MediaPlayer mpTurn = MediaPlayer.create(this, R.raw.gachagiro);
+                if (mpTurn != null) {
+                    mpTurn.start();
+                    mpTurn.setOnCompletionListener(MediaPlayer::release);
+                }
+
+                android.animation.ObjectAnimator rotarPerilla = android.animation.ObjectAnimator.ofFloat(v, "rotation", 0f, 360f);
+                rotarPerilla.setDuration(800);
+                rotarPerilla.start();
+
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    imgCapsule.setTranslationY(-150f);
+                    imgCapsule.setAlpha(1f);
+
+                    imgCapsule.animate()
+                            .translationY(0f)
+                            .setDuration(600)
+                            .setInterpolator(new android.view.animation.BounceInterpolator())
+                            .withEndAction(() -> {
+
+
+                                // 5. ABRIR CÁPSULA (Usa la versión abierta del mismo color)
+                                imgCapsule.setImageResource(capsulasAbiertas[colorElegido]);
+                                // 👇 Cambio instantáneo de tamaño (sin animación) 👇
+                                imgCapsule.setScaleX(1.4f);
+                                imgCapsule.setScaleY(1.4f);
+                                MediaPlayer mpOpen = MediaPlayer.create(this, R.raw.gachaopen);
+                                if (mpOpen != null) {
+                                    mpOpen.start();
+                                    mpOpen.setOnCompletionListener(MediaPlayer::release);
+                                }
+
+                                // imgGachaGlow.setAlpha(1f);
+                                // android.animation.ObjectAnimator rotarLuz = android.animation.ObjectAnimator.ofFloat(imgGachaGlow, "rotation", 0f, 3600f);
+                                // rotarLuz.setDuration(10000);
+                                // rotarLuz.start();
+
+                                android.os.Vibrator vibrator = (android.os.Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                if (vibrator != null) vibrator.vibrate(300);
+
+                                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                    gachaDialog.dismiss();
+                                    entregarPremioGacha();
+                                }, 1200);
+
+                            }).start();
+                }, 800);
+
+            } else {
+                CustomToast.makeText(this, "Not enough coins! Watch an ad?", Toast.LENGTH_LONG).show();
+            }
+        };
+
+        imgKnobLeft.setOnClickListener(jugarGachaClick);
+        imgKnobRight.setOnClickListener(jugarGachaClick);
+
+        gachaDialog.show();
+    }
+
+    private void entregarPremioGacha() {
+        List<GachaItem> todosLosPremios = new ArrayList<>(Config.gachaWallpapersList);
+        if (todosLosPremios.isEmpty()) {
+            CustomToast.makeText(this, "No prizes loaded. Check internet!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        android.content.SharedPreferences appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        Set<String> favWalls = appPrefs.getStringSet("fav_wallpapers_ids", new HashSet<>());
+
+        // 1. Verificamos si ya tiene la colección completa
+        int ownedCount = 0;
+        for (GachaItem item : todosLosPremios) {
+            if (favWalls.contains(item.image)) ownedCount++;
+        }
+        boolean tieneTodos = (ownedCount >= todosLosPremios.size());
+
+        GachaItem premio = null;
+        boolean esMoneda = false;
+        int monedasGanadas = 0;
+
+        // 2. Tiramos los dados (20% de que salgan monedas de forma natural, o 100% si ya tiene todos)
+        int rollTipo = new java.util.Random().nextInt(100);
+        if (tieneTodos || rollTipo < 20) {
+            esMoneda = true;
+        } else {
+            // Saca un Wallpaper al azar
+            premio = todosLosPremios.get(new java.util.Random().nextInt(todosLosPremios.size()));
+            // Si le tocó repetido, lo convertimos en un premio de monedas para que no pierda su tiro
+            if (favWalls.contains(premio.image)) {
+                esMoneda = true;
+            }
+        }
+
+        // 3. Si ganó monedas, calculamos cuántas con tus probabilidades
+        if (esMoneda) {
+            int rollMonedas = new java.util.Random().nextInt(100);
+            if (rollMonedas < 2) monedasGanadas = 50;       // 2% probabilidad
+            else if (rollMonedas < 10) monedasGanadas = 10; // 8% probabilidad
+            else if (rollMonedas < 30) monedasGanadas = 5;  // 20% probabilidad
+            else if (rollMonedas < 60) monedasGanadas = 3;  // 30% probabilidad
+            else monedasGanadas = 2;                        // 40% probabilidad
+
+            // Fabricamos una "Carta de Moneda" falsa para que la animación funcione igual
+            premio = new GachaItem();
+            premio.type = "coin";
+            premio.title = "COIN JACKPOT";
+            premio.colorBg = "#FFD700"; // Dorado para las monedas
+            premio.rarity = (monedasGanadas >= 10) ? "epic" : "common"; // Si gana 10 o 50, la carta brillará en 3D
+        }
+
+        // --- DECLARACIÓN DE VARIABLES FINALES PARA LAS ANIMACIONES Y EL BOTÓN ---
+        // Se declaran AQUÍ para que todo el código debajo las reconozca correctamente
+        final boolean esPremioMoneda = "coin".equals(premio.type);
+        final int monedasFinales = monedasGanadas;
+        final GachaItem premioFinal = premio;
+
+        // --- CREACIÓN DE LA VENTANA ---
+        android.app.Dialog rewardDialog = new android.app.Dialog(this, android.R.style.Theme_Light_NoTitleBar_Fullscreen);
+        rewardDialog.setContentView(R.layout.dialog_gacha_reward);
+        rewardDialog.setCancelable(false);
+        if (rewardDialog.getWindow() != null) {
+            // Ponemos la ventana base transparente (el XML ya tiene tu color oscuro)
+            rewardDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+
+            // MAGIA DE FADE IN: Inicia invisible y se oscurece suavemente en 0.6 segundos
+            rewardDialog.getWindow().getDecorView().setAlpha(0f);
+            rewardDialog.getWindow().getDecorView().animate().alpha(1f).setDuration(600).start();
+        }
+
+        ImageView imgGlow = rewardDialog.findViewById(R.id.imgRewardGlow);
+        TextView txtTitle = rewardDialog.findViewById(R.id.txtRewardTitle);
+        View holoContainer = rewardDialog.findViewById(R.id.holoRewardContainer);
+        ImageView imgItem = rewardDialog.findViewById(R.id.imgRewardItem);
+        CardView btnClaim = rewardDialog.findViewById(R.id.btnClaimReward);
+        HoloCardView holoEffect = rewardDialog.findViewById(R.id.holoEffectOverlay);
+        TextView txtClaimBtn = rewardDialog.findViewById(R.id.txtClaimBtn);
+        ImageView imgBack = rewardDialog.findViewById(R.id.imgRewardBack);
+
+        // ¿Es moneda o Wallpaper?
+        if (esPremioMoneda) {
+            // Ponemos tu PNG de moneda local
+            imgItem.setImageResource(R.drawable.coin_caraa);
+            txtTitle.setText("YOU WON...");
+            txtClaimBtn.setText("CLAIM " + monedasFinales + " COINS");
+        } else {
+            // Descargamos el Wallpaper de GitHub normal
+            String baseUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/Gacha/";
+            Glide.with(this).load(baseUrl + premioFinal.image).into(imgItem);
+            txtTitle.setText("YOU GOT...");
+            txtClaimBtn.setText("CLAIM REWARD");
+        }
+
+        // Pintar la carta Y EL BOTÓN con el color del JSON
+        if (premioFinal.colorBg != null && !premioFinal.colorBg.isEmpty()) {
+            try {
+                int colorPremio = Color.parseColor(premioFinal.colorBg);
+                // Pinta la parte trasera de la carta
+                ((androidx.cardview.widget.CardView) holoContainer).setCardBackgroundColor(colorPremio);
+                // Pinta el botón de reclamar
+                btnClaim.setCardBackgroundColor(colorPremio);
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+
+        // Activar efecto Holo SOLO si es Epic o Rare
+        if ("epic".equalsIgnoreCase(premioFinal.rarity) || "rare".equalsIgnoreCase(premioFinal.rarity)) {
+            holoEffect.setVisibility(View.VISIBLE);
+            HoloController holoController = HoloController.getInstance(this);
+            holoController.register(holoEffect);
+
+            rewardDialog.setOnDismissListener(dialog -> {
+                holoController.unregister(holoEffect);
+            });
+        } else {
+            // Si es común, apagamos el overlay para que no brille
+            holoEffect.setVisibility(View.GONE);
+        }
+
+        // --- ANIMACIÓN 3D: CARTA CAYENDO Y GIRANDO ---
+
+        // MAGIA ANTI-DEFORMACIÓN Y ANTI-FLASHEO
+        float scale = getResources().getDisplayMetrics().density;
+        holoContainer.setCameraDistance(8000 * scale);
+
+        // APAGAMOS la sombra durante el giro para evitar el bug del "destello blanco" de Android
+        ((androidx.cardview.widget.CardView) holoContainer).setCardElevation(0f);
+
+        // 1. Preparamos la carta
+        holoContainer.setTranslationY(-2000f);
+        holoContainer.setRotationY(-540f);
+        holoContainer.setAlpha(1f);
+
+        txtTitle.setAlpha(0f);
+        txtTitle.animate().alpha(1f).setStartDelay(800).setDuration(500).start();
+        btnClaim.setAlpha(0f);
+        btnClaim.animate().alpha(1f).setStartDelay(1600).setDuration(500).start();
+
+        // 2. Caída Épica
+        holoContainer.animate()
+                .translationY(0f)
+                .rotationY(0f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(1800)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(1.2f))
+                .setUpdateListener(valueAnimator -> {
+                    float rotacionActual = Math.abs(holoContainer.getRotationY() % 360);
+
+                    if (rotacionActual >= 90f && rotacionActual <= 270f) {
+                        // DE ESPALDAS
+                        imgBack.setVisibility(View.VISIBLE);
+                        imgItem.setVisibility(View.INVISIBLE); // <-- Ocultamos el premio para evitar conflictos
+                        holoEffect.setVisibility(View.GONE);
+                    } else {
+                        // DE FRENTE
+                        imgBack.setVisibility(View.GONE);
+                        imgItem.setVisibility(View.VISIBLE); // <-- Mostramos el premio de nuevo
+
+                        if ("epic".equalsIgnoreCase(premioFinal.rarity) ||
+                                "rare".equalsIgnoreCase(premioFinal.rarity)) {
+                            holoEffect.setVisibility(View.VISIBLE);
+                        }
+                    }
+                })
+                .withEndAction(() -> {
+                    // APARECE EL CÍRCULO DE VICTORIA
+                    imgGlow.animate().alpha(1f).setDuration(500).start();
+
+                    // EMPIEZA A GIRAR INFINITAMENTE
+                    android.animation.ObjectAnimator rotarLuz = android.animation.ObjectAnimator.ofFloat(imgGlow, "rotation", 0f, 360f);
+                    rotarLuz.setDuration(6000);
+                    rotarLuz.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+                    rotarLuz.setInterpolator(new android.view.animation.LinearInterpolator());
+                    rotarLuz.start();
+
+                    // ACTIVAMOS LA INTERACCIÓN TÁCTIL
+                    holoContainer.setOnTouchListener(new CardSpinController(holoContainer, rotacionY -> {
+                        // Reutilizamos la matemática para saber si está de espaldas o de frente
+                        float rotacionActual = Math.abs(rotacionY % 360);
+                        if (rotacionActual >= 90f && rotacionActual <= 270f) {
+                            // DE ESPALDAS
+                            imgBack.setVisibility(View.VISIBLE);
+                            imgItem.setVisibility(View.INVISIBLE);
+                            holoEffect.setVisibility(View.GONE);
+                        } else {
+                            // DE FRENTE
+                            imgBack.setVisibility(View.GONE);
+                            imgItem.setVisibility(View.VISIBLE);
+                            if ("epic".equalsIgnoreCase(premioFinal.rarity) || "rare".equalsIgnoreCase(premioFinal.rarity)) {
+                                holoEffect.setVisibility(View.VISIBLE);
+                            }
+                        }
+                    }));
+                })
+                .start();
+
+        // --- LÓGICA DEL BOTÓN DE RECLAMAR ---
+        btnClaim.setOnClickListener(v -> {
+            if (esPremioMoneda) {
+                // SUMAR MONEDAS
+                android.content.SharedPreferences rewardsPrefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+                int saldo = rewardsPrefs.getInt("skip_tickets", 0) + monedasFinales;
+                rewardsPrefs.edit().putInt("skip_tickets", saldo).apply();
+                actualizarMonedasUI();
+                actualizarMonedasEnNube(saldo);
+
+                // Sonido épico de monedas
+                try {
+                    MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
+                    if (mp != null) { mp.setOnCompletionListener(MediaPlayer::release); mp.start(); }
+                } catch (Exception e) {}
+
+                CustomToast.makeText(this, "+" + monedasFinales + " Coins Added! 💰", Toast.LENGTH_SHORT).show();
+
+            } else {
+                // GUARDAR WALLPAPER EN FAVORITOS
+                Set<String> newFavs = new HashSet<>(favWalls);
+                newFavs.add(premioFinal.image);
+                appPrefs.edit().putStringSet("fav_wallpapers_ids", newFavs).apply();
+
+                FirebaseUser user = mAuth.getCurrentUser();
+                if (user != null) {
+                    FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                            .update("fav_wallpapers", FieldValue.arrayUnion(premioFinal.image));
+                }
+
+                Config.Wallpaper gachaWall = new Config.Wallpaper(premioFinal.id, premioFinal.title, premioFinal.image, premioFinal.publisher != null ? premioFinal.publisher : "UnTal3D", false, false, premioFinal.artistLink);
+                gachaWall.colorBg = premioFinal.colorBg;
+                gachaWall.isHidden = true;
+                gachaWall.isGacha = true;
+                Config.wallpapers.add(gachaWall);
+
+                CustomToast.makeText(this, "Saved to Favorites! 💖", Toast.LENGTH_SHORT).show();
+            }
+
+            // Cierre suave (Fade Out) que ya teníamos
+            if (rewardDialog.getWindow() != null) {
+                rewardDialog.getWindow().getDecorView().animate().alpha(0f).setDuration(400).withEndAction(rewardDialog::dismiss).start();
+            } else {
+                rewardDialog.dismiss();
+            }
+        });
+
+        rewardDialog.show();
+    }
+
+
+    private void revisarGachaSemanal() {
+        if (isFinishing() || isDestroyed()) return;
+        if (isDailyBonusActive) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        // Recuperamos la última vez que jugó (si es la primera vez, será 0)
+        long ultimaVezQueJugo = prefs.getLong("last_gacha_play_time", 0);
+        long tiempoActual = System.currentTimeMillis();
+
+        // 7 días en milisegundos (7 * 24 horas * 60 min * 60 seg * 1000 ms)
+        long sieteDiasEnMilisegundos = 7L * 24L * 60L * 60L * 1000L;
+
+        // Si la diferencia es mayor a 7 días, o si es la primera vez que abre la app
+        if (tiempoActual - ultimaVezQueJugo >= sieteDiasEnMilisegundos) {
+            // Revisamos que los datos de internet ya estén listos para no abrir una ventana vacía
+            if (Config.gachaWallpapersList != null && !Config.gachaWallpapersList.isEmpty()) {
+                mostrarDialogGacha();
+            }
         }
     }
 

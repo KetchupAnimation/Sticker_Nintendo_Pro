@@ -98,27 +98,40 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
             holder.img.setBackgroundColor(colorFondo);
         } catch (Exception e) { holder.img.setBackgroundColor(Color.LTGRAY); }
 
-        String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+        // NUEVA LÓGICA PARA LEER RUTAS DE GACHA O NORMALES
+        String imgUrl;
+        if (wall.imageFile != null && wall.imageFile.startsWith("Wallpaper/")) {
+            // Es un premio exclusivo del Gacha
+            imgUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/Gacha/" + wall.imageFile;
+        } else {
+            // Es un wallpaper normal
+            String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+            imgUrl = baseUrl + "wallpappers/" + wall.imageFile;
+        }
+
         Glide.with(context)
-                .load(baseUrl + "wallpappers/" + wall.imageFile)
+                .load(imgUrl)
                 .transform(new CenterCrop(), new RoundedCorners(16))
                 .into(holder.img);
 
         // --- ETIQUETAS ---
         if (holder.badgeNew != null) {
             TextView txt = holder.itemView.findViewById(R.id.txtBadgeNew);
-            if (wall.rewardDay != null && !wall.rewardDay.isEmpty()) {
-                holder.badgeNew.setVisibility(View.VISIBLE);
+            holder.badgeNew.setVisibility(View.VISIBLE);
+
+            if (wall.isGacha || (wall.imageFile != null && wall.imageFile.startsWith("Wallpaper/"))) {
+                if (holder.badgeNew instanceof CardView) ((CardView) holder.badgeNew).setCardBackgroundColor(Color.parseColor("#2196F3")); // Azul Gacha
+                if (txt != null) { txt.setText("GACHA"); txt.setTextColor(Color.WHITE); }
+            }
+            else if (wall.rewardDay != null && !wall.rewardDay.isEmpty()) {
                 if (holder.badgeNew instanceof CardView) ((CardView) holder.badgeNew).setCardBackgroundColor(Color.parseColor("#FFD700"));
                 if (txt != null) { txt.setText("EVENT"); txt.setTextColor(Color.BLACK); }
             }
             else if (wall.isLimitedTime) {
-                holder.badgeNew.setVisibility(View.VISIBLE);
                 if (holder.badgeNew instanceof CardView) ((CardView) holder.badgeNew).setCardBackgroundColor(Color.parseColor("#4CAF50"));
                 if (txt != null) { txt.setText("24h"); txt.setTextColor(Color.WHITE); }
             }
             else if (wall.isNew) {
-                holder.badgeNew.setVisibility(View.VISIBLE);
                 if (holder.badgeNew instanceof CardView) ((CardView) holder.badgeNew).setCardBackgroundColor(Color.parseColor("#D50000"));
                 if (txt != null) { txt.setText("NEW"); txt.setTextColor(Color.WHITE); }
             }
@@ -230,6 +243,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
                 intent.putExtra("wall_artist_link", wall.artistLink);
                 intent.putExtra("is_limited", wall.isLimitedTime);
                 intent.putExtra("is_hidden", wall.isHidden);
+                intent.putExtra("is_gacha", wall.isGacha || (wall.imageFile != null && wall.imageFile.startsWith("Wallpaper/")));
                 context.startActivity(intent);
             }
         });

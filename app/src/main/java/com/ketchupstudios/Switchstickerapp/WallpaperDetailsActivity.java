@@ -90,6 +90,7 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
 
         isLimited = getIntent().getBooleanExtra("is_limited", false);
         isHidden = getIntent().getBooleanExtra("is_hidden", false);
+        boolean isGacha = getIntent().getBooleanExtra("is_gacha", false);
 
         artistLink = getIntent().getStringExtra("wall_artist_link");
         if (artistLink == null || artistLink.isEmpty()) {
@@ -111,8 +112,6 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
         // --------------------------------------------------------
 
         // --- RECUPERAR TUS VISTAS DE DISEÑO ---
-        // Asumo que en tu activity_wallpaper_details.xml tienes estos IDs
-        // Si no los tienes, avísame, pero deberían estar si copiaste el diseño anterior.
         badgeNew = findViewById(R.id.badgeNew);
         txtBadgeNew = findViewById(R.id.txtBadgeNew);
         holoEffectView = findViewById(R.id.holoEffectView);
@@ -133,23 +132,33 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
         } catch (Exception e) { colorFondoActual = Color.WHITE; }
         imgFull.setBackgroundColor(colorFondoActual);
 
-        // --- 3. LÓGICA VISUAL DE EVENTO (REUTILIZANDO TU ETIQUETA) ---
-        if (isLimited || isHidden) {
-            // A. ACTIVAR HOLO
+        // --- 3. LÓGICA VISUAL DE ETIQUETAS ---
+        if (isGacha) {
             if (holoEffectView != null) holoEffectView.setVisibility(View.VISIBLE);
-
-            // B. TRANSFORMAR ETIQUETA "NEW" EN "EVENT"
             if (badgeNew != null && txtBadgeNew != null) {
                 badgeNew.setVisibility(View.VISIBLE);
-                badgeNew.setCardBackgroundColor(Color.parseColor("#FFD700")); // Dorado
+                badgeNew.setCardBackgroundColor(Color.parseColor("#2196F3")); // Azul Gacha
+                txtBadgeNew.setText("GACHA");
+                txtBadgeNew.setTextColor(Color.WHITE);
+            }
+        } else if (isLimited) { // <-- AHORA 24H TIENE SU PROPIO ESPACIO
+            if (holoEffectView != null) holoEffectView.setVisibility(View.VISIBLE);
+            if (badgeNew != null && txtBadgeNew != null) {
+                badgeNew.setVisibility(View.VISIBLE);
+                badgeNew.setCardBackgroundColor(Color.parseColor("#4CAF50")); // Verde 24h
+                txtBadgeNew.setText("24h");
+                txtBadgeNew.setTextColor(Color.WHITE);
+            }
+        } else if (isHidden) { // <-- LOS DEMÁS EVENTOS OCULTOS
+            if (holoEffectView != null) holoEffectView.setVisibility(View.VISIBLE);
+            if (badgeNew != null && txtBadgeNew != null) {
+                badgeNew.setVisibility(View.VISIBLE);
+                badgeNew.setCardBackgroundColor(Color.parseColor("#FFD700")); // Dorado Event
                 txtBadgeNew.setText("EVENT");
                 txtBadgeNew.setTextColor(Color.BLACK);
             }
         } else {
-            // SI ES NORMAL
             if (holoEffectView != null) holoEffectView.setVisibility(View.GONE);
-            // La etiqueta New se maneja normalmente (aquí la ocultamos por defecto si no es nueva)
-            // O puedes dejar tu lógica de "isNew" aquí si la traes en el intent.
             if (badgeNew != null) badgeNew.setVisibility(View.GONE);
         }
         // -------------------------------------------------------------
@@ -174,10 +183,21 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
             } catch(Exception e) { }
         });
 
-        String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+        // 👇 AQUI ES DONDE CAMBIÓ LA LÓGICA DE LA RUTA INTELIGENTE 👇
+        String imgUrl;
+        if (imageUrl != null && imageUrl.startsWith("Wallpaper/")) {
+            // Es de Gacha
+            imgUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/Gacha/" + imageUrl;
+        } else {
+            // Es un wallpaper normal
+            String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+            imgUrl = baseUrl + "wallpappers/" + imageUrl;
+        }
+
         progressBar.setVisibility(View.VISIBLE);
 
-        Glide.with(this).asBitmap().load(baseUrl + "wallpappers/" + imageUrl)
+        // Y AQUI LE PASAMOS LA imgUrl CORRECTA A GLIDE
+        Glide.with(this).asBitmap().load(imgUrl)
                 .listener(new RequestListener<Bitmap>() {
                     @Override public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
                         progressBar.setVisibility(View.GONE); return false;
@@ -190,6 +210,7 @@ public class WallpaperDetailsActivity extends AppCompatActivity {
                         return false;
                     }
                 }).into(imgFull);
+        // 👆 FIN DEL CAMBIO 👆
 
         if (artistLink != null && !artistLink.isEmpty()) {
             btnSupport.setVisibility(View.VISIBLE);

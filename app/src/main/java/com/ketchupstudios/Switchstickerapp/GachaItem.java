@@ -10,6 +10,7 @@ public class GachaItem {
     public String image;
     public String rarity;
     public String colorBg;
+    public String publisher;
     public String artistLink;
     public List<String> tags = new ArrayList<>();
 

@@ -13,8 +13,8 @@ android {
         applicationId = "com.ketchupstudios.Switchstickerapp"
         minSdk = 24
         targetSdk = 35
-        versionCode = 91
-        versionName = "14.5"
+        versionCode = 92
+        versionName = "14.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

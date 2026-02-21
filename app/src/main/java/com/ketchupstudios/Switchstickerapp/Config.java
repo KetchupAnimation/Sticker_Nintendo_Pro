@@ -69,7 +69,8 @@ public class Config {
         public boolean isPremium;
         public String artistLink;
         public String colorBg;
-        public boolean isHidden = false;// <-- Añade esta línea
+        public boolean isHidden = false;
+        public boolean isGacha = false;
         public String rewardDay = "";
 
         // NUEVO CAMPO PARA EVENTOS LIMITADOS
@@ -145,4 +146,10 @@ public class Config {
     public static int totalWidgetsCount = 20;
     public static boolean dataLoaded = false; // <-- ¡Esta es la más importante!
     public static Promo promoData = null;
+
+
+    // --- GACHA SYSTEM ---
+    public static final String GACHA_JSON_URL = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/Gacha/gacha.json";
+    public static List<GachaItem> gachaWallpapersList = new ArrayList<>();
+    public static List<GachaItem> gachaWidgetsList = new ArrayList<>();
 }

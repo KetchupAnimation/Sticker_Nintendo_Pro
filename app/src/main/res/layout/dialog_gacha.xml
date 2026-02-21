@@ -33,7 +33,7 @@
             android:clickable="true"
             android:focusable="true"
             android:padding="8dp"
-            android:src="@drawable/ic_delete"
+            android:src="@drawable/ic_close"
             app:tint="#000000"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -140,7 +140,7 @@
             android:layout_width="121dp"
             android:layout_height="115dp"
             android:alpha="0"
-            android:src="@drawable/gacha_cerrado"
+            android:src="@drawable/gacha_rojo_cerrado"
             app:layout_constraintBottom_toBottomOf="@+id/imgMachineLeft"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
