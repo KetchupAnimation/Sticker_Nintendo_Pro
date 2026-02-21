@@ -231,12 +231,12 @@ public class MainActivity extends AppCompatActivity {
         if (cardCoinContainer != null) {
             cardCoinContainer.setOnClickListener(v -> mostrarExplicacionMonedas());
             // EL ATAJO SECRETO: Mantener presionado abre el Gacha
-            /*
+
             cardCoinContainer.setOnLongClickListener(v -> {
                 mostrarDialogGacha();
                 return true;
             });
-             */
+
         }
         // -----------------------------------------------
         //  REGALO DE BIENVENIDA (3 MONEDAS INICIALES)
@@ -540,9 +540,10 @@ public class MainActivity extends AppCompatActivity {
                         continue; // Si falla la fecha, mejor no mostrarlo por seguridad
                     }
                 }
-                // -------------------------------------------------------------
-
-                if (p.status != null && (p.status.equalsIgnoreCase("new") || p.status.equalsIgnoreCase("updated"))) {
+                // 👇 NUEVO FILTRO GACHA 👇
+                if (p.status != null && p.status.equalsIgnoreCase("gacha")) {
+                    continue; // Si es gacha, lo saltamos y no lo mostramos
+                } else if (p.status != null && (p.status.equalsIgnoreCase("new") || p.status.equalsIgnoreCase("updated"))) {
                     priority.add(p);
                 } else {
                     normal.add(p);
@@ -1214,6 +1215,8 @@ public class MainActivity extends AppCompatActivity {
             if (Config.packs != null) {
                 for (StickerPack p : Config.packs) {
                     if (activeEventPack != null && p == activeEventPack) continue;
+                    // 👇 NUEVA LÍNEA: Ignoramos los packs Gacha 👇
+                    if (p.status != null && p.status.equalsIgnoreCase("gacha")) continue;
                     if (p.status != null && (p.status.equalsIgnoreCase("new") || p.status.equalsIgnoreCase("updated"))) stickersVip.add(p);
                     else stickersComunes.add(p);
                 }
@@ -2551,6 +2554,24 @@ public class MainActivity extends AppCompatActivity {
                    }
                }
 
+               // 👇 NUEVO: Cargar Packs de Stickers Exclusivos del Gacha 👇
+               if (jsonObject.has("gacha_packs")) {
+                   JSONArray packs = jsonObject.getJSONArray("gacha_packs");
+                   for (int i = 0; i < packs.length(); i++) {
+                       JSONObject p = packs.getJSONObject(i);
+                       GachaItem item = new GachaItem();
+                       item.id = p.getString("id");
+                       item.type = p.getString("type");
+                       item.title = p.getString("title");
+                       item.pack_identifier = p.getString("pack_identifier");
+                       item.rarity = p.getString("rarity");
+                       item.colorBg = p.optString("colorBg", "#000000");
+
+                       // Lo metemos a la urna general de premios
+                       Config.gachaWallpapersList.add(item);
+                   }
+               }
+
                // Cargar Widgets Gacha
                if (jsonObject.has("gacha_widgets")) {
                    JSONArray widgets = jsonObject.getJSONArray("gacha_widgets");
@@ -2752,6 +2773,7 @@ public class MainActivity extends AppCompatActivity {
         // --- DECLARACIÓN DE VARIABLES FINALES PARA LAS ANIMACIONES Y EL BOTÓN ---
         // Se declaran AQUÍ para que todo el código debajo las reconozca correctamente
         final boolean esPremioMoneda = "coin".equals(premio.type);
+        final boolean esPremioPack = "sticker_pack".equals(premio.type);
         final int monedasFinales = monedasGanadas;
         final GachaItem premioFinal = premio;
 
@@ -2783,6 +2805,13 @@ public class MainActivity extends AppCompatActivity {
             imgItem.setImageResource(R.drawable.coin_caraa);
             txtTitle.setText("YOU WON...");
             txtClaimBtn.setText("CLAIM " + monedasFinales + " COINS");
+        } else if (esPremioPack) {
+            // 👇 NUEVO: Es un Pack Exclusivo 👇
+            String baseUrlStickers = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/contents/";
+            String imageUrl = baseUrlStickers + premioFinal.pack_identifier + "/gacha_bg.png";
+            Glide.with(this).load(imageUrl).into(imgItem);
+            txtTitle.setText("EXCLUSIVE PACK!");
+            txtClaimBtn.setText("OPEN PACK");
         } else {
             // Descargamos el Wallpaper de GitHub normal
             String baseUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/Gacha/";
@@ -2912,6 +2941,24 @@ public class MainActivity extends AppCompatActivity {
 
                 CustomToast.makeText(this, "+" + monedasFinales + " Coins Added! 💰", Toast.LENGTH_SHORT).show();
 
+            } else if (esPremioPack) {
+                // 👇 NUEVO: GUARDAR EL PACK COMO DESBLOQUEADO 👇
+                Set<String> unlockedPacks = appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>());
+                Set<String> newUnlocked = new HashSet<>(unlockedPacks);
+                newUnlocked.add(premioFinal.pack_identifier);
+                appPrefs.edit().putStringSet("unlocked_gacha_packs", newUnlocked).apply();
+
+                FirebaseUser user = mAuth.getCurrentUser();
+                if (user != null) {
+                    FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                            .update("unlocked_gacha_packs", FieldValue.arrayUnion(premioFinal.pack_identifier));
+                }
+
+                // 👇 ABRIR EL MINIJUEGO DE SILUETAS 👇
+                Intent intent = new Intent(MainActivity.this, GachaUnboxActivity.class);
+                intent.putExtra("PACK_ID", premioFinal.pack_identifier); // Le pasamos el ID del pack a la nueva pantalla
+                startActivity(intent);
+
             } else {
                 // GUARDAR WALLPAPER EN FAVORITOS
                 Set<String> newFavs = new HashSet<>(favWalls);
@@ -2940,7 +2987,7 @@ public class MainActivity extends AppCompatActivity {
                 rewardDialog.dismiss();
             }
         });
-
+        // 👇 ESTAS DOS LÍNEAS FALTABAN 👇
         rewardDialog.show();
     }
 

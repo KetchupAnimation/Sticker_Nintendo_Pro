@@ -12,6 +12,7 @@ public class GachaItem {
     public String colorBg;
     public String publisher;
     public String artistLink;
+    public String pack_identifier;
     public List<String> tags = new ArrayList<>();
 
     // Constructor vacío necesario para algunas librerías

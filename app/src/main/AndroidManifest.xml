@@ -262,6 +262,12 @@
             android:windowSoftInputMode="adjustResize"/>
 
 
+        <activity
+            android:name=".GachaUnboxActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+
     </application>
 
 </manifest>

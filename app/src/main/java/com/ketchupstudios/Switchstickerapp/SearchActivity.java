@@ -266,6 +266,7 @@ public class SearchActivity extends AppCompatActivity {
 
     private boolean debeMostrarPack(StickerPack p) {
         if (p.isEvent) return false;
+        if (p.status != null && p.status.equalsIgnoreCase("gacha")) return false;
         return true;
     }
 
