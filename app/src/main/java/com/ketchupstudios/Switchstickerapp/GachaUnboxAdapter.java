@@ -37,12 +37,13 @@ public class GachaUnboxAdapter extends RecyclerView.Adapter<GachaUnboxAdapter.Vi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Sticker sticker = pack.stickers.get(position);
+        StickerPack.Sticker sticker = pack.stickers.get(position);
 
-        // Cargamos la imagen desde la memoria
-        File file = new File(context.getFilesDir() + "/" + pack.identifier + "/" + sticker.imageFileName);
-        Uri uri = Uri.fromFile(file);
-        Glide.with(context).load(uri).into(holder.imgSticker);
+        // 👇 CORRECCIÓN: Descargar directo de GitHub para la previsualización 👇
+        String baseUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/contents/";
+        String stickerUrl = baseUrl + pack.identifier + "/" + sticker.imageFile;
+
+        Glide.with(context).load(stickerUrl).into(holder.imgSticker);
 
         // LÓGICA DE SILUETAS
         if (isUnlocked[position]) {
@@ -50,26 +51,25 @@ public class GachaUnboxAdapter extends RecyclerView.Adapter<GachaUnboxAdapter.Vi
             holder.imgSticker.clearColorFilter();
             holder.imgSticker.setAlpha(1.0f);
         } else {
-            // Si no está revelado, lo teñimos de gris oscuro/negro para hacer la silueta
+            // Si no está revelado, lo teñimos de gris oscuro/negro
             holder.imgSticker.setColorFilter(Color.parseColor("#333333"), PorterDuff.Mode.SRC_IN);
             holder.imgSticker.setAlpha(0.8f);
         }
 
         // ACCIÓN AL TOCAR
         holder.itemView.setOnClickListener(v -> {
-            // Solo dejamos desbloquear si no lo ha tocado antes y si no ha pasado de 3
             if (!isUnlocked[position] && activity.unlockedCount < 3) {
                 isUnlocked[position] = true;
 
-                // Efecto Pop animado muy satisfactorio
+                // Efecto Pop animado
                 holder.imgSticker.setScaleX(0.5f);
                 holder.imgSticker.setScaleY(0.5f);
                 holder.imgSticker.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).withEndAction(() -> {
                     holder.imgSticker.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start();
                 }).start();
 
-                notifyItemChanged(position); // Actualiza esta celda
-                activity.onStickerUnlocked(); // Avisa a la pantalla para sumar el contador
+                notifyItemChanged(position);
+                activity.onStickerUnlocked();
             }
         });
     }

@@ -2807,8 +2807,9 @@ public class MainActivity extends AppCompatActivity {
             txtClaimBtn.setText("CLAIM " + monedasFinales + " COINS");
         } else if (esPremioPack) {
             // 👇 NUEVO: Es un Pack Exclusivo 👇
-            String baseUrlStickers = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/contents/";
-            String imageUrl = baseUrlStickers + premioFinal.pack_identifier + "/gacha_bg.png";
+            // Usamos la ruta oficial de tu JSON para no fallar
+            String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+            String imageUrl = baseUrl + premioFinal.pack_identifier + "/gacha_bg.png";
             Glide.with(this).load(imageUrl).into(imgItem);
             txtTitle.setText("EXCLUSIVE PACK!");
             txtClaimBtn.setText("OPEN PACK");

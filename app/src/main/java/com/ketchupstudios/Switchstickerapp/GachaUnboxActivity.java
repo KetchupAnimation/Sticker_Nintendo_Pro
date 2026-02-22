@@ -4,10 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 
 public class GachaUnboxActivity extends AppCompatActivity {
 
@@ -16,6 +18,8 @@ public class GachaUnboxActivity extends AppCompatActivity {
     private RecyclerView recycler;
     private TextView txtCounter;
     private TextView txtTitle;
+    private TextView txtAuthor;
+    private ImageView imgTray;
     private Button btnAddToWa;
     public int unlockedCount = 0;
 
@@ -36,20 +40,29 @@ public class GachaUnboxActivity extends AppCompatActivity {
         }
 
         txtTitle = findViewById(R.id.txtUnboxTitle);
+        txtAuthor = findViewById(R.id.txtDetailAuthor);
+        imgTray = findViewById(R.id.imgPackTray);
         txtCounter = findViewById(R.id.txtUnboxCounter);
         btnAddToWa = findViewById(R.id.btnAddToWa);
         recycler = findViewById(R.id.recyclerGachaUnbox);
 
         if (currentPack != null) {
-            txtTitle.setText(currentPack.name); // Ponemos el nombre real del pack
-            recycler.setLayoutManager(new GridLayoutManager(this, 4)); // 4 columnas se ve mejor para stickers
+            // Llenar datos de la cabecera
+            txtTitle.setText(currentPack.name);
+            txtAuthor.setText("x " + (currentPack.publisher != null ? currentPack.publisher : "UnTal3D"));
 
-            // 👇 CONECTAMOS EL ADAPTADOR MÁGICO 👇
+            // Descargar el icono (tray image) desde GitHub
+            String baseUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/contents/";
+            String trayUrl = baseUrl + currentPack.identifier + "/" + currentPack.trayImageFile;
+            Glide.with(this).load(trayUrl).into(imgTray);
+
+            // Preparar cuadrícula de siluetas
+            recycler.setLayoutManager(new GridLayoutManager(this, 4));
             GachaUnboxAdapter adapter = new GachaUnboxAdapter(this, currentPack, this);
             recycler.setAdapter(adapter);
         }
 
-        // Lógica para enviar a WhatsApp (Se mostrará cuando desbloqueen 3)
+        // Acción del botón de WhatsApp
         btnAddToWa.setOnClickListener(v -> {
             Intent intent = new Intent();
             intent.setAction("com.whatsapp.intent.action.ENABLE_STICKER_PACK");
@@ -64,15 +77,13 @@ public class GachaUnboxActivity extends AppCompatActivity {
         });
     }
 
-    // Método que el Adaptador llamará cada vez que toquen un sticker gris
     public void onStickerUnlocked() {
         unlockedCount++;
         txtCounter.setText("Choose 3 to unlock: " + unlockedCount + "/3");
 
         if (unlockedCount >= 3) {
             txtCounter.setText("Pack Unlocked! 🎉");
-            txtCounter.setTextColor(android.graphics.Color.parseColor("#25D366"));
-            btnAddToWa.setVisibility(View.VISIBLE); // ¡Mostramos el botón!
+            btnAddToWa.setVisibility(View.VISIBLE); // Mostramos el botón negro
         }
     }
 }
