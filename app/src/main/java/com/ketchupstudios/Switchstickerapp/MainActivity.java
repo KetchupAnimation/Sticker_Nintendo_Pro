@@ -2352,31 +2352,37 @@ public class MainActivity extends AppCompatActivity {
     // ===============================================================
 
     private void verificarDailyLogin() {
-        // Le damos 1.5 segundos para que la app cargue todo antes de molestar al usuario
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        // Obtenemos la fecha de hoy (formato AAAA-MM-DD)
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        String hoy = sdf.format(new Date());
 
-            // Si la actividad se está cerrando o ya lo mostramos en este arranque, no hacer nada
-            if (isFinishing() || isDestroyed() || isDailyBonusMostradoEnSesion) return;
+        // Obtenemos la última fecha en que reclamó
+        String ultimaFecha = prefs.getString("last_daily_claim", "");
 
-            android.content.SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
-            // Obtenemos la fecha de hoy (formato AAAA-MM-DD)
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
-            String hoy = sdf.format(new Date());
+        // Si la fecha es diferente, TOCA RECOMPENSA HOY
+        if (!hoy.equals(ultimaFecha) && !isDailyBonusMostradoEnSesion) {
 
-            // Obtenemos la última fecha en que reclamó
-            String ultimaFecha = prefs.getString("last_daily_claim", "");
+            // 👇 1. PONEMOS EL SEMÁFORO EN ROJO INMEDIATAMENTE (Para frenar al Gacha) 👇
+            isDailyBonusActive = true;
+            isDailyBonusMostradoEnSesion = true;
 
-            // Si la fecha es diferente, mostramos el regalo
-            if (!hoy.equals(ultimaFecha)) {
-                isDailyBonusMostradoEnSesion = true; // Marcamos que ya se procesó en esta sesión
-                mostrarDialogoDailyBonus(hoy);
-            }
-        }, 1500); // 1.5 segundos de espera
+            // 2. Esperamos los 1.5s visuales tranquilos
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (!isFinishing() && !isDestroyed()) {
+                    mostrarDialogoDailyBonus(hoy);
+                }
+            }, 1500);
+
+        } else {
+            // 👇 SI NO TOCA RECOMPENSA, EL SEMÁFORO ESTÁ VERDE DESDE EL INICIO 👇
+            isDailyBonusActive = false;
+        }
     }
 
     private void mostrarDialogoDailyBonus(String fechaHoy) {
-        if (isDailyBonusActive || isFinishing() || isDestroyed()) return;
-        isDailyBonusActive = true;
+        if (isFinishing() || isDestroyed()) return;
+
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_daily_bonus, null);
         builder.setView(view);
@@ -2389,14 +2395,12 @@ public class MainActivity extends AppCompatActivity {
         // Evitamos que lo cierren tocando fuera (para que decidan sí o no)
         dialog.setCancelable(false);
 
-        // 👇 2. MAGIA DE PRIORIDAD: Al cerrarse, liberamos y llamamos al Gacha
+        // 👇 AL CERRARSE, EL SEMÁFORO SE PONE VERDE Y LLAMA AL GACHA 👇
         dialog.setOnDismissListener(d -> {
             isDailyBonusActive = false;
-            // Damos 800 milisegundos de respiro para que la pantalla se limpie
-            // y no haya cruce de animaciones antes de abrir el Gacha.
-            new Handler(Looper.getMainLooper()).postDelayed(() -> revisarGachaSemanal(), 800);
+            // Damos 800 milisegundos de respiro visual antes de abrir el Gacha
+            new Handler(Looper.getMainLooper()).postDelayed(this::revisarGachaSemanal, 800);
         });
-
 
         Button btnClaim = view.findViewById(R.id.btnClaimBonus);
         TextView btnClose = view.findViewById(R.id.btnCloseBonus);
@@ -2414,11 +2418,10 @@ public class MainActivity extends AppCompatActivity {
 
         dialog.show();
 
-       // Esto fuerza el ancho a 320dp (tamaño tarjeta) y altura automática
+        // Fuerza el ancho de la tarjeta para que se vea bonita
         if (dialog.getWindow() != null) {
             dialog.getWindow().setLayout(convertDpToPx(320), android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
         }
-        // ------------------------------------------------
     }
 
     private void darRecompensaDiaria(String fechaHoy) {
