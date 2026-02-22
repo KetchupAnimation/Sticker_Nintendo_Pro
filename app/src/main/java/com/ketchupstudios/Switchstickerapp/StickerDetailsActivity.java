@@ -47,6 +47,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +64,10 @@ public class StickerDetailsActivity extends AppCompatActivity {
     private int unlockedCount = 0;
     private boolean isEventExpired = false;
 
+    // 👇 NUEVO: Variables para el control de Gacha 👇
+    private boolean isGachaPack = false;
+    private Set<String> unlockedGachaStickers = new HashSet<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,16 +82,24 @@ public class StickerDetailsActivity extends AppCompatActivity {
         ImageView btnShare = findViewById(R.id.btnShareApp);
 
         if (Config.selectedPack != null) {
-            // --- LÓGICA DE EVENTO ---
-            if (Config.selectedPack.isEvent && Config.selectedPack.eventStartDate != null) {
-                calcularStickersDesbloqueados();
 
-                // Solo mostramos texto de "UNLOCKED" si es evento Y NO ha expirado
+            // 👇 1. DETECTAR SI ES UN PACK DEL GACHA 👇
+            isGachaPack = Config.selectedPack.status != null && Config.selectedPack.status.equalsIgnoreCase("gacha");
+
+            if (isGachaPack) {
+                // Recuperar la memoria local de este pack específico
+                unlockedGachaStickers = getSharedPreferences("GachaUnlocks", MODE_PRIVATE)
+                        .getStringSet("pack_" + Config.selectedPack.identifier, new HashSet<>());
+
+                // Actualizar botón
+                btnAdd.setText("UNLOCKED (" + unlockedGachaStickers.size() + ")");
+
+            } else if (Config.selectedPack.isEvent && Config.selectedPack.eventStartDate != null) {
+                calcularStickersDesbloqueados();
                 if (!isEventExpired && unlockedCount < Config.selectedPack.stickers.size()) {
-                    btnAdd.setText("ADD UNLOCKED (" + unlockedCount + ") + 1 COIN");
+                    btnAdd.setText("DAY (" + unlockedCount + ") + 1 COIN");
                 }
             } else {
-                // Si NO es evento, se desbloquean todos
                 unlockedCount = Config.selectedPack.stickers.size();
             }
 
@@ -102,7 +115,6 @@ public class StickerDetailsActivity extends AppCompatActivity {
                 try {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
-                    String appPackageName = getPackageName();
                     String shareMessage = "Check out these stickers by " + Config.selectedPack.name + "!\n";
                     shareMessage = shareMessage + "*Download here:* https://play.google.com/store/apps/details?id=" + getPackageName();
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareMessage);
@@ -135,8 +147,10 @@ public class StickerDetailsActivity extends AppCompatActivity {
         }
 
         btnAdd.setOnClickListener(v -> {
-            if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < 3) {
-                CustomToast.makeText(this, "Wait! WhatsApp needs at least 3 unlocked stickers.", Toast.LENGTH_LONG).show();
+            if (isGachaPack && unlockedGachaStickers.size() < 3) {
+                CustomToast.makeText(this, "WhatsApp needs at least 3 unlocked stickers.", Toast.LENGTH_LONG).show();
+            } else if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < 3) {
+                CustomToast.makeText(this, "WhatsApp needs at least 3 unlocked stickers.", Toast.LENGTH_LONG).show();
             } else {
                 iniciarCargaDeAnuncio(btnAdd);
             }
@@ -154,9 +168,8 @@ public class StickerDetailsActivity extends AppCompatActivity {
             long diff = today.getTime() - startDate.getTime();
             long daysPassed = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) + 1;
 
-            if (daysPassed < 1) {
-                unlockedCount = 0;
-            } else {
+            if (daysPassed < 1) { unlockedCount = 0; }
+            else {
                 if (daysPassed > Config.selectedPack.stickers.size()) {
                     isEventExpired = true;
                     unlockedCount = Config.selectedPack.stickers.size();
@@ -171,15 +184,10 @@ public class StickerDetailsActivity extends AppCompatActivity {
         }
     }
 
-    // =============================================================
-    // ADAPTADOR DE STICKERS (CON LÓGICA DE TIEMPO Y FOMO)
-    // =============================================================
     private class StickerGridAdapter extends RecyclerView.Adapter<StickerGridAdapter.ViewHolder> {
         private List<StickerPack.Sticker> stickerList;
 
-        public StickerGridAdapter(List<StickerPack.Sticker> stickerList) {
-            this.stickerList = stickerList;
-        }
+        public StickerGridAdapter(List<StickerPack.Sticker> stickerList) { this.stickerList = stickerList; }
 
         @NonNull
         @Override
@@ -194,38 +202,39 @@ public class StickerDetailsActivity extends AppCompatActivity {
             String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
             Glide.with(holder.itemView.getContext()).load(baseUrl + Config.selectedPack.identifier + "/" + sticker.imageFile).into(holder.image);
 
-            // SOLO APLICAMOS LÓGICA DE EVENTO SI EL EVENTO SIGUE ACTIVO
-            if (Config.selectedPack.isEvent && !isEventExpired) {
+            // 👇 2. EL PINTADO INTELIGENTE (GACHA VS NORMAL) 👇
+            if (isGachaPack) {
+                holder.layoutRewardBadge.setVisibility(View.GONE);
+
+                if (unlockedGachaStickers.contains(sticker.imageFile)) {
+                    // DESBLOQUEADO (Color Completo)
+                    holder.image.clearColorFilter();
+                    holder.image.setAlpha(1.0f);
+                    holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
+                } else {
+                    // BLOQUEADO (Silueta Gris)
+                    holder.image.setColorFilter(Color.parseColor("#444444"), PorterDuff.Mode.SRC_IN);
+                    holder.image.setAlpha(0.6f);
+                    holder.itemView.setOnClickListener(v -> mostrarPopupGachaBloqueado());
+                }
+            }
+            else if (Config.selectedPack.isEvent && !isEventExpired) {
+                // LÓGICA ORIGINAL DEL EVENTO...
                 SharedPreferences milestonePrefs = getSharedPreferences("EventMilestones", MODE_PRIVATE);
                 boolean yaReclamado = milestonePrefs.getBoolean("claimed_" + Config.selectedPack.identifier + "_" + diaActual, false);
 
-                // --- 1. LÓGICA DE PREMIOS (WALLPAPERS) ---
-                // Supongamos que hay premio cada 5 días (o usa tu lógica de JSON si prefieres)
                 if (diaActual % 5 == 0) {
                     holder.layoutRewardBadge.setVisibility(View.VISIBLE);
-
                     if (yaReclamado) {
-                        // YA LO TIENE -> VERDE O ROJO (OK)
                         holder.layoutRewardBadge.setBackgroundResource(R.drawable.bg_badge_red);
                         holder.itemView.setOnClickListener(v -> mostrarPopupRegaloWallpaper(diaActual, true));
-                    }
-                    else if (diaActual < unlockedCount) {
-                        // --- CASO PERDIDO (AYER O ANTES) ---
-                        // Icono Gris
+                    } else if (diaActual < unlockedCount) {
                         holder.layoutRewardBadge.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#424242")));
-
-                        // CLIC -> VENTANA DE "TOO LATE"
                         holder.itemView.setOnClickListener(v -> mostrarPopupPerdido());
-                    }
-                    else if (diaActual == unlockedCount) {
-                        // --- CASO HOY (DISPONIBLE) ---
-                        // Icono Rojo Vivo
+                    } else if (diaActual == unlockedCount) {
                         holder.layoutRewardBadge.setBackgroundResource(R.drawable.bg_badge_red);
-                        // CLIC -> RECLAMAR
                         holder.itemView.setOnClickListener(v -> mostrarPopupRegaloWallpaper(diaActual, false));
-                    }
-                    else {
-                        // --- CASO FUTURO (LOCKED) ---
+                    } else {
                         holder.layoutRewardBadge.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#212121")));
                         holder.itemView.setOnClickListener(v -> CustomToast.makeText(StickerDetailsActivity.this, "Locked until Day " + diaActual, Toast.LENGTH_SHORT).show());
                     }
@@ -233,37 +242,25 @@ public class StickerDetailsActivity extends AppCompatActivity {
                     holder.layoutRewardBadge.setVisibility(View.GONE);
                 }
 
-                // --- 2. LÓGICA DE SILUETA (STICKERS NORMALES) ---
                 if (position >= unlockedCount) {
-                    // BLOQUEADO (FUTURO)
                     holder.image.setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
                     holder.image.setAlpha(0.3f);
-                    if (diaActual % 5 != 0) { // Si no es premio, mostramos toast simple
-                        holder.itemView.setOnClickListener(v -> CustomToast.makeText(StickerDetailsActivity.this, "Wait " + (diaActual - unlockedCount) + " days", Toast.LENGTH_SHORT).show());
-                    }
+                    if (diaActual % 5 != 0) holder.itemView.setOnClickListener(v -> CustomToast.makeText(StickerDetailsActivity.this, "Wait " + (diaActual - unlockedCount) + " days", Toast.LENGTH_SHORT).show());
                 } else {
-                    // DESBLOQUEADO (HOY O PASADO)
                     holder.image.clearColorFilter();
                     holder.image.setAlpha(1.0f);
-                    if (diaActual % 5 != 0) { // Si no es premio, abrir preview
-                        holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
-                    }
+                    if (diaActual % 5 != 0) holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
                 }
             } else {
-                // MODO NORMAL (NO EVENTO O EXPIRADO)
                 holder.layoutRewardBadge.setVisibility(View.GONE);
                 holder.image.clearColorFilter();
                 holder.image.setAlpha(1.0f);
                 holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
             }
         }
-
-        @Override
-        public int getItemCount() { return stickerList.size(); }
-
+        @Override public int getItemCount() { return stickerList.size(); }
         class ViewHolder extends RecyclerView.ViewHolder {
-            ImageView image;
-            View layoutRewardBadge;
+            ImageView image; View layoutRewardBadge;
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 image = itemView.findViewById(R.id.sticker_image);
@@ -272,13 +269,43 @@ public class StickerDetailsActivity extends AppCompatActivity {
         }
     }
 
-    // =============================================================
-    // MÉTODO NUEVO: POPUP "TOO LATE"
-    // =============================================================
+    // 👇 3. POPUP DE SILUETA DE GACHA 👇
+    private void mostrarPopupGachaBloqueado() {
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_missed_event, null);
+        dialog.setContentView(view);
+        if(dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        // Magia para cambiar los textos sin conocer los IDs exactos de tu XML
+        modificarTextosParaGacha((ViewGroup) view);
+
+        View btnClose = view.findViewById(R.id.btnGotItMissed);
+        if(btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+        dialog.show();
+    }
+
+    private void modificarTextosParaGacha(ViewGroup vg) {
+        for (int i = 0; i < vg.getChildCount(); i++) {
+            View v = vg.getChildAt(i);
+            // Evitamos tocar el texto del botón por si quieres que diga "Got it"
+            if (v instanceof TextView && v.getId() != R.id.btnGotItMissed) {
+                TextView tv = (TextView) v;
+                // Si el texto es corto, seguro es el título
+                if (tv.getText().length() < 20) {
+                    tv.setText("LOCKED STICKER");
+                } else { // Si es largo, es la descripción
+                    tv.setText("Play the Gacha roulette on the Home screen to reveal this exclusive sticker!");
+                }
+            } else if (v instanceof ViewGroup) {
+                modificarTextosParaGacha((ViewGroup) v);
+            }
+        }
+    }
+
     private void mostrarPopupPerdido() {
         android.app.Dialog dialog = new android.app.Dialog(this);
-
-        // Usamos un RelativeLayout envolvente para centrar el CardView si es necesario
         android.view.ViewGroup wrapper = new android.widget.RelativeLayout(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_missed_event, wrapper, false);
         android.widget.RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) view.getLayoutParams();
@@ -287,20 +314,13 @@ public class StickerDetailsActivity extends AppCompatActivity {
 
         dialog.setContentView(wrapper);
         if(dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-
-        // Listener del botón "I'll be faster next time"
         View btnClose = view.findViewById(R.id.btnGotItMissed);
-        if(btnClose != null) {
-            btnClose.setOnClickListener(v -> dialog.dismiss());
-        }
-
+        if(btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
-    // =============================================================
-    // POPUP DE PREMIO (RECOMPENSA)
-    // =============================================================
     private void mostrarPopupRegaloWallpaper(int dia, boolean yaReclamado) {
+        // Lógica original del regalo...
         android.app.Dialog dialog = new android.app.Dialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_update_note, null);
         dialog.setContentView(view);
@@ -311,26 +331,18 @@ public class StickerDetailsActivity extends AppCompatActivity {
         View holoView = view.findViewById(R.id.holoEffectReward);
         if (holoView != null) holoView.setVisibility(View.VISIBLE);
 
-        // --- LÓGICA DE BÚSQUEDA DEL WALLPAPER (IGUAL QUE ANTES) ---
         String wallpaperId = "";
         Config.Wallpaper wallPremio = null;
-        // [ARREGLO]: Pasamos el ID a minúsculas para que coincida con las tags del JSON
         String currentPackId = Config.selectedPack.identifier.toLowerCase();
 
         for (Config.Wallpaper w : Config.wallpapers) {
-            if (w.rewardDay.equals(String.valueOf(dia))) {
-                if (w.tags != null && w.tags.contains(currentPackId)) {
-                    wallPremio = w;
-                    wallpaperId = w.imageFile;
-                    break;
-                }
+            if (w.rewardDay.equals(String.valueOf(dia)) && w.tags != null && w.tags.contains(currentPackId)) {
+                wallPremio = w; wallpaperId = w.imageFile; break;
             }
         }
         if (wallpaperId.isEmpty()) {
             for (Config.Wallpaper w : Config.wallpapers) {
-                if (w.rewardDay.equals(String.valueOf(dia))) {
-                    wallPremio = w; wallpaperId = w.imageFile; break;
-                }
+                if (w.rewardDay.equals(String.valueOf(dia))) { wallPremio = w; wallpaperId = w.imageFile; break; }
             }
             if (wallpaperId.isEmpty()) wallpaperId = "wall_29.png";
         }
@@ -343,45 +355,30 @@ public class StickerDetailsActivity extends AppCompatActivity {
         String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
         Glide.with(this).load(baseUrl + "wallpappers/" + wallpaperId).into(imgNote);
 
-        // --- AQUÍ EMPIEZA LO NUEVO ---
         if (yaReclamado) {
             btnAction.setText("Already in favorites! ❤️");
-            btnAction.setOnClickListener(v -> dialog.dismiss()); // Si ya lo tiene, solo cierra
+            btnAction.setOnClickListener(v -> dialog.dismiss());
         } else {
-            btnAction.setText("Claim Reward!"); // Texto inicial
-
+            btnAction.setText("Claim Reward!");
             final String finalId = wallpaperId;
-            final Config.Wallpaper finalWall = wallPremio; // Guardamos referencia
-
             btnAction.setOnClickListener(v -> {
-                // 1. Revisar Monedas
                 SharedPreferences prefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
                 int tickets = prefs.getInt("skip_tickets", 0);
-                int costo = 3; // Costo por saltar el anuncio
-
-                if (tickets >= costo) {
-                    // OPCIÓN A: TIENE MONEDAS -> PREGUNTAR
-                    dialog.hide(); // Ocultamos momentáneamente el popup del premio
-                    mostrarDialogoGastarMonedas("Unlock Reward?", costo, tickets, () -> {
-                        // PAGÓ CON MONEDAS
-                        prefs.edit().putInt("skip_tickets", tickets - costo).apply();
+                if (tickets >= 3) {
+                    dialog.hide();
+                    mostrarDialogoGastarMonedas("Unlock Reward?", 3, tickets, () -> {
+                        prefs.edit().putInt("skip_tickets", tickets - 3).apply();
                         CustomToast.makeText(this, "Redeemed! Reward Unlocked 🔓", Toast.LENGTH_SHORT).show();
-
-                        // Guardamos directo
                         reclamarRecompensaAhora(finalId, dia, dialog);
-
                     }, () -> {
-                        // PREFIRIÓ VER ANUNCIO
-                        dialog.show(); // Volvemos a mostrar el popup
+                        dialog.show();
                         cargarAnuncioParaRecompensa(btnAction, finalId, dia, dialog);
                     });
                 } else {
-                    // OPCIÓN B: NO TIENE MONEDAS -> ANUNCIO DIRECTO
                     cargarAnuncioParaRecompensa(btnAction, finalId, dia, dialog);
                 }
             });
         }
-
         dialog.setCancelable(true);
         view.setScaleX(0.5f); view.setScaleY(0.5f); view.setAlpha(0f);
         dialog.setOnShowListener(d -> view.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(500).setInterpolator(new OvershootInterpolator()).start());
@@ -392,15 +389,9 @@ public class StickerDetailsActivity extends AppCompatActivity {
         if (Config.selectedPack == null) return;
         if (Config.selectedPack.isEvent && !isEventExpired) {
             SharedPreferences milestonePrefs = getSharedPreferences("EventMilestones", MODE_PRIVATE);
-
-            // Calculamos el hito actual (Ej: si vamos en día 8, el hito es 5. Si vamos en 12, es 10)
             int currentMilestone = (unlockedCount / 5) * 5;
-
-            // Solo mostramos popup automático si es HOY (unlockedCount == currentMilestone)
-            // No mostramos popup automático si el hito ya pasó (para eso es el popup de "Perdido")
             if (currentMilestone > 0 && currentMilestone == unlockedCount) {
-                boolean yaReclamado = milestonePrefs.getBoolean("claimed_" + Config.selectedPack.identifier + "_" + currentMilestone, false);
-                if (!yaReclamado) {
+                if (!milestonePrefs.getBoolean("claimed_" + Config.selectedPack.identifier + "_" + currentMilestone, false)) {
                     mostrarPopupRegaloWallpaper(currentMilestone, false);
                 }
             }
@@ -412,29 +403,23 @@ public class StickerDetailsActivity extends AppCompatActivity {
         btn.setText("Loading Ad...");
         AdRequest adRequest = new AdRequest.Builder().build();
         InterstitialAd.load(this, "ca-app-pub-9087203932210009/2214350595", adRequest, new InterstitialAdLoadCallback() {
-            @Override
-            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+            @Override public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
                 mInterstitialAd = interstitialAd;
                 mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback(){
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
+                    @Override public void onAdDismissedFullScreenContent() {
                         mInterstitialAd = null;
                         if (Config.selectedPack.isEvent) darTicketDeRecompensa();
-                        restaurarBoton(btn);
-                        iniciarDescargaYEnvio();
+                        restaurarBoton(btn); iniciarDescargaYEnvio();
                     }
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    @Override public void onAdFailedToShowFullScreenContent(AdError adError) {
                         mInterstitialAd = null;
                         if (Config.selectedPack.isEvent) darTicketDeRecompensa();
-                        restaurarBoton(btn);
-                        iniciarDescargaYEnvio();
+                        restaurarBoton(btn); iniciarDescargaYEnvio();
                     }
                 });
                 mInterstitialAd.show(StickerDetailsActivity.this);
             }
-            @Override
-            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+            @Override public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
                 mInterstitialAd = null; restaurarBoton(btn); iniciarDescargaYEnvio();
             }
         });
@@ -448,8 +433,10 @@ public class StickerDetailsActivity extends AppCompatActivity {
     }
 
     private void restaurarBoton(Button btn) {
-        if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < Config.selectedPack.stickers.size()) {
-            btn.setText("ADD UNLOCKED (" + unlockedCount + ") + 1 COIN");
+        if (isGachaPack) {
+            btn.setText("DAY (" + unlockedGachaStickers.size() + ")");
+        } else if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < Config.selectedPack.stickers.size()) {
+            btn.setText("DAY (" + unlockedCount + ") + 1 COIN");
         } else {
             btn.setText("Add to WhatsApp");
         }
@@ -479,10 +466,28 @@ public class StickerDetailsActivity extends AppCompatActivity {
         d.show();
     }
 
+    // 👇 4. HACK MAESTRO DE DESCARGA PARA WHATSAPP 👇
     private void iniciarDescargaYEnvio() {
         mostrarCargando();
         new Thread(() -> {
             try {
+                if (isGachaPack) {
+                    List<StickerPack.Sticker> unlockedList = new ArrayList<>();
+                    for (StickerPack.Sticker s : Config.selectedPack.stickers) {
+                        if (unlockedGachaStickers.contains(s.imageFile)) {
+                            unlockedList.add(s);
+                        }
+                    }
+                    StickerPack waPack = new StickerPack();
+                    waPack.identifier = Config.selectedPack.identifier;
+                    waPack.name = Config.selectedPack.name;
+                    waPack.publisher = Config.selectedPack.publisher;
+                    waPack.trayImageFile = Config.selectedPack.trayImageFile;
+                    waPack.stickers = unlockedList;
+
+                    Config.selectedPack = waPack; // Engañamos a WhatsApp
+                }
+
                 descargarArchivos();
                 runOnUiThread(() -> { cerrarCargando(); enviarIntentAWhatsApp(); });
             } catch (Exception e) {
@@ -496,8 +501,19 @@ public class StickerDetailsActivity extends AppCompatActivity {
         if (!dir.exists()) dir.mkdirs();
         String url = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1) + Config.selectedPack.identifier + "/";
         descargarArchivo(url + Config.selectedPack.trayImageFile, new File(dir, Config.selectedPack.trayImageFile));
-        int limit = Config.selectedPack.isEvent ? unlockedCount : Config.selectedPack.stickers.size();
-        for (int i = 0; i < limit; i++) descargarArchivo(url + Config.selectedPack.stickers.get(i).imageFile, new File(dir, Config.selectedPack.stickers.get(i).imageFile));
+
+        int limit;
+        if (isGachaPack) {
+            limit = Config.selectedPack.stickers.size(); // Ya está filtrado por el hack
+        } else if (Config.selectedPack.isEvent) {
+            limit = unlockedCount;
+        } else {
+            limit = Config.selectedPack.stickers.size();
+        }
+
+        for (int i = 0; i < limit; i++) {
+            descargarArchivo(url + Config.selectedPack.stickers.get(i).imageFile, new File(dir, Config.selectedPack.stickers.get(i).imageFile));
+        }
     }
 
     private void descargarArchivo(String u, File d) throws Exception {
@@ -525,17 +541,9 @@ public class StickerDetailsActivity extends AppCompatActivity {
         dialogCarga.show();
     }
 
-    // En StickerDetailsActivity.java
-
     private void cerrarCargando() {
-        // FIX: Verificamos que la actividad siga viva y usamos try-catch
         if (!isFinishing() && !isDestroyed() && dialogCarga != null && dialogCarga.isShowing()) {
-            try {
-                dialogCarga.dismiss();
-            } catch (IllegalArgumentException e) {
-                // Si la ventana ya no es válida, ignoramos el error para que no se cierre la app
-                Log.e("StickerDetails", "Error al cerrar diálogo: " + e.getMessage());
-            }
+            try { dialogCarga.dismiss(); } catch (IllegalArgumentException e) { Log.e("StickerDetails", "Error al cerrar diálogo: " + e.getMessage()); }
         }
     }
 
@@ -550,46 +558,24 @@ public class StickerDetailsActivity extends AppCompatActivity {
         v.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
     }
 
-
-    // 1. CARGAR ANUNCIO ESPECÍFICO PARA PREMIO
     private void cargarAnuncioParaRecompensa(Button btn, String wallId, int dia, android.app.Dialog dialogPadre) {
-        btn.setEnabled(false);
-        btn.setText("Loading Ad..."); // Feedback visual
-
+        btn.setEnabled(false); btn.setText("Loading Ad...");
         AdRequest adRequest = new AdRequest.Builder().build();
-        // Usamos el mismo ID de Interstitial (o cámbialo si tienes uno específico para Rewards)
         InterstitialAd.load(this, Config.ADMOB_INTERSTITIAL_ID, adRequest, new InterstitialAdLoadCallback() {
-            @Override
-            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+            @Override public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
                 mInterstitialAd = interstitialAd;
                 mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-                    @Override
-                    public void onAdDismissedFullScreenContent() {
-                        mInterstitialAd = null;
-                        // ¡PUM! SE AGREGA A FAVORITOS
-                        reclamarRecompensaAhora(wallId, dia, dialogPadre);
-                    }
-                    @Override
-                    public void onAdFailedToShowFullScreenContent(AdError adError) {
-                        mInterstitialAd = null;
-                        // Si falla al mostrar, lo damos igual para no frustrar
-                        reclamarRecompensaAhora(wallId, dia, dialogPadre);
-                    }
+                    @Override public void onAdDismissedFullScreenContent() { mInterstitialAd = null; reclamarRecompensaAhora(wallId, dia, dialogPadre); }
+                    @Override public void onAdFailedToShowFullScreenContent(AdError adError) { mInterstitialAd = null; reclamarRecompensaAhora(wallId, dia, dialogPadre); }
                 });
                 mInterstitialAd.show(StickerDetailsActivity.this);
             }
-
-            @Override
-            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                mInterstitialAd = null;
-                // Si falla al cargar (ej: sin internet), lo damos igual o muestras error
-                CustomToast.makeText(StickerDetailsActivity.this, "Ad failed, giving reward anyway...", Toast.LENGTH_SHORT).show();
-                reclamarRecompensaAhora(wallId, dia, dialogPadre);
+            @Override public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                mInterstitialAd = null; CustomToast.makeText(StickerDetailsActivity.this, "Ad failed, giving reward anyway...", Toast.LENGTH_SHORT).show(); reclamarRecompensaAhora(wallId, dia, dialogPadre);
             }
         });
     }
 
-    // 2. LÓGICA FINAL DE GUARDADO (EXTRAÍDA PARA REUTILIZAR)
     private void reclamarRecompensaAhora(String finalId, int dia, android.app.Dialog dialog) {
         SharedPreferences favPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         Set<String> favs = new HashSet<>(favPrefs.getStringSet("fav_wallpapers_ids", new HashSet<>()));
@@ -597,35 +583,22 @@ public class StickerDetailsActivity extends AppCompatActivity {
         favPrefs.edit().putStringSet("fav_wallpapers_ids", favs).apply();
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            FirebaseFirestore.getInstance().collection("users").document(user.getUid())
-                    .update("fav_wallpapers", FieldValue.arrayUnion(finalId));
-        }
+        if (user != null) FirebaseFirestore.getInstance().collection("users").document(user.getUid()).update("fav_wallpapers", FieldValue.arrayUnion(finalId));
 
-        getSharedPreferences("EventMilestones", MODE_PRIVATE).edit()
-                .putBoolean("claimed_" + Config.selectedPack.identifier + "_" + dia, true).apply();
+        getSharedPreferences("EventMilestones", MODE_PRIVATE).edit().putBoolean("claimed_" + Config.selectedPack.identifier + "_" + dia, true).apply();
 
-        if (dialog != null && dialog.isShowing()) {
-            dialog.dismiss();
-        }
-
+        if (dialog != null && dialog.isShowing()) dialog.dismiss();
         RecyclerView rvGrid = findViewById(R.id.rvStickersGrid);
         if (rvGrid.getAdapter() != null) rvGrid.getAdapter().notifyDataSetChanged();
-
         CustomToast.makeText(this, "Reward added to favorites!", Toast.LENGTH_LONG).show();
     }
 
-    // 3. DIÁLOGO DE MONEDAS (COPIADO DE MAINACTIVITY PARA QUE FUNCIONE AQUÍ)
     private void mostrarDialogoGastarMonedas(String title, int cost, int balance, Runnable onUseCoins, Runnable onWatchAd) {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        // Asegúrate de tener 'dialog_spend_coins.xml' en tus layouts (ya lo tienes del Main)
         View view = getLayoutInflater().inflate(R.layout.dialog_spend_coins, null);
         builder.setView(view);
-
         android.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        }
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
         TextView txtTitle = view.findViewById(R.id.txtDialogTitle);
         TextView txtMsg = view.findViewById(R.id.txtDialogMessage);
@@ -638,16 +611,8 @@ public class StickerDetailsActivity extends AppCompatActivity {
         txtBal.setText("Balance: " + balance + " coins");
         btnUse.setText("USE " + cost + " COINS");
 
-        btnUse.setOnClickListener(v -> {
-            dialog.dismiss();
-            if (onUseCoins != null) onUseCoins.run();
-        });
-
-        btnAd.setOnClickListener(v -> {
-            dialog.dismiss();
-            if (onWatchAd != null) onWatchAd.run();
-        });
-
+        btnUse.setOnClickListener(v -> { dialog.dismiss(); if (onUseCoins != null) onUseCoins.run(); });
+        btnAd.setOnClickListener(v -> { dialog.dismiss(); if (onWatchAd != null) onWatchAd.run(); });
         dialog.show();
     }
 }

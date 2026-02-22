@@ -1637,32 +1637,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void abrirPantallaDetalles(StickerPack pack) {
-        // 👇 NUEVO: Interceptar packs del Gacha para mostrar solo lo desbloqueado 👇
-        if (pack.status != null && pack.status.equalsIgnoreCase("gacha")) {
-            Set<String> unlocked = getSharedPreferences("GachaUnlocks", MODE_PRIVATE)
-                    .getStringSet("pack_" + pack.identifier, new HashSet<>());
-
-            StickerPack filteredPack = new StickerPack();
-            filteredPack.identifier = pack.identifier;
-            filteredPack.name = pack.name;
-            filteredPack.publisher = pack.publisher;
-            filteredPack.trayImageFile = pack.trayImageFile;
-            filteredPack.status = pack.status;
-            filteredPack.isPremium = pack.isPremium;
-            filteredPack.artistLink = pack.artistLink;
-            filteredPack.updateNoteImage = pack.updateNoteImage;
-            filteredPack.stickers = new ArrayList<>();
-
-            for (StickerPack.Sticker s : pack.stickers) {
-                if (unlocked.contains(s.imageFile)) {
-                    filteredPack.stickers.add(s);
-                }
-            }
-            Config.selectedPack = filteredPack;
-        } else {
-            Config.selectedPack = pack;
-        }
-        // 👆 FIN NUEVO 👆
+        // Le pasamos el paquete COMPLETO al álbum para que dibuje las siluetas
+        Config.selectedPack = pack;
         startActivity(new Intent(this, StickerDetailsActivity.class));
     }
 
