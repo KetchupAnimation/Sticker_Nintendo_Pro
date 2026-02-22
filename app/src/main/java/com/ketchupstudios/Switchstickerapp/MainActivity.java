@@ -752,18 +752,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 👇 NUEVO: Cargar Gacha Packs Desbloqueados 👇
-        Set<String> unlockedPacksIds = appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>());
+        // 👇 CORRECCIÓN: Cargar Gacha Packs directamente de tu progreso 👇
+        android.content.SharedPreferences gachaPrefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE);
         List<StickerPack> favPacksList = new ArrayList<>();
         if (Config.packs != null) {
             for (StickerPack p : Config.packs) {
-                if (unlockedPacksIds.contains(p.identifier)) {
+                // Revisamos si el pack tiene al menos 1 sticker ganado
+                Set<String> unlocked = gachaPrefs.getStringSet("pack_" + p.identifier, new HashSet<>());
+                if (unlocked != null && !unlocked.isEmpty()) {
                     favPacksList.add(p);
                 }
             }
         }
         boolean hasPacks = !favPacksList.isEmpty();
-        // 👆 FIN NUEVO 👆
+        // 👆 FIN CORRECCIÓN 👆
 
         boolean hasWall = !favWallList.isEmpty();
         boolean hasWid = !favWidgetList.isEmpty();
@@ -1885,7 +1887,7 @@ public class MainActivity extends AppCompatActivity {
         Set<String> localWidgets = widgetPrefs.getStringSet("fav_wallpapers", new HashSet<>());
         Set<String> localBattery = appPrefs.getStringSet("fav_battery_ids", new HashSet<>());
         int localCoins = rewardsPrefs.getInt("skip_tickets", 0);
-        Set<String> localGachaPacks = appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>()); // 👇 NUEVO
+
 
         // 2. CONSULTAR NUBE PARA DECIDIR (MERGE INTELIGENTE)
         docRef.get().addOnSuccessListener(snapshot -> {
@@ -1895,7 +1897,7 @@ public class MainActivity extends AppCompatActivity {
             if (!localWalls.isEmpty()) updates.put("fav_wallpapers", FieldValue.arrayUnion(localWalls.toArray()));
             if (!localWidgets.isEmpty()) updates.put("fav_widgets", FieldValue.arrayUnion(localWidgets.toArray()));
             if (!localBattery.isEmpty()) updates.put("fav_battery", FieldValue.arrayUnion(localBattery.toArray()));
-            if (!localGachaPacks.isEmpty()) updates.put("unlocked_gacha_packs", FieldValue.arrayUnion(localGachaPacks.toArray())); // 👇 NUEVO
+
 
             // 👇 NUEVO: B) PROGRESO DE STICKERS INDIVIDUALES (MAPA) 👇
             Map<String, Object> progressMap = new HashMap<>();
@@ -2018,13 +2020,6 @@ public class MainActivity extends AppCompatActivity {
                                     .edit().putStringSet("fav_battery_ids", set).apply();
                         }
 
-                        // 👇 NUEVO: SINCRONIZAR PACKS GACHA DESBLOQUEADOS 👇
-                        List<String> cloudGachaPacks = (List<String>) doc.get("unlocked_gacha_packs");
-                        if (cloudGachaPacks != null) {
-                            Set<String> setPacks = new HashSet<>(cloudGachaPacks);
-                            getSharedPreferences("AppPrefs", MODE_PRIVATE)
-                                    .edit().putStringSet("unlocked_gacha_packs", setPacks).apply();
-                        }
 
                         // 👇 NUEVO: SINCRONIZAR STICKERS INDIVIDUALES DEL GACHA 👇
                         Map<String, Object> cloudGachaProgress = (Map<String, Object>) doc.get("gacha_progress");
