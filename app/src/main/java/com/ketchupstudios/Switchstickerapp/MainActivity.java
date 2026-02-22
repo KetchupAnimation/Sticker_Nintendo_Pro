@@ -752,15 +752,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 👇 CORRECCIÓN: Cargar Gacha Packs directamente de tu progreso 👇
+        // 👇 CORRECCIÓN: Cargar Gacha Packs y Extras directamente de tu progreso 👇
         android.content.SharedPreferences gachaPrefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE);
         List<StickerPack> favPacksList = new ArrayList<>();
         if (Config.packs != null) {
             for (StickerPack p : Config.packs) {
                 // Revisamos si el pack tiene al menos 1 sticker ganado
                 Set<String> unlocked = gachaPrefs.getStringSet("pack_" + p.identifier, new HashSet<>());
-                if (unlocked != null && !unlocked.isEmpty()) {
-                    favPacksList.add(p);
+                // 👇 NUEVO: Revisamos si el pack tiene al menos 1 sticker secreto/extra ganado 👇
+                Set<String> extras = gachaPrefs.getStringSet("extras_" + p.identifier, new HashSet<>());
+
+                if ((unlocked != null && !unlocked.isEmpty()) || (extras != null && !extras.isEmpty())) {
+                    if (!favPacksList.contains(p)) { // Evitamos duplicados por si acaso
+                        favPacksList.add(p);
+                    }
                 }
             }
         }
@@ -1875,11 +1880,12 @@ public class MainActivity extends AppCompatActivity {
             if (!localBattery.isEmpty()) updates.put("fav_battery", FieldValue.arrayUnion(localBattery.toArray()));
 
 
-            // 👇 NUEVO: B) PROGRESO DE STICKERS INDIVIDUALES (MAPA) 👇
+            // 👇 NUEVO: B) PROGRESO DE STICKERS INDIVIDUALES Y EXTRAS (MAPA) 👇
             Map<String, Object> progressMap = new HashMap<>();
             Map<String, ?> allGachaKeys = gachaPrefs.getAll();
             for (Map.Entry<String, ?> entry : allGachaKeys.entrySet()) {
-                if (entry.getKey().startsWith("pack_") && entry.getValue() instanceof Set) {
+                // Modificado para que escanee los packs normales y los extras secretos
+                if ((entry.getKey().startsWith("pack_") || entry.getKey().startsWith("extras_")) && entry.getValue() instanceof Set) {
                     Set<String> unlockedStickers = (Set<String>) entry.getValue();
                     if (!unlockedStickers.isEmpty()) {
                         progressMap.put(entry.getKey(), FieldValue.arrayUnion(unlockedStickers.toArray()));
@@ -2914,19 +2920,12 @@ public class MainActivity extends AppCompatActivity {
             txtTitle.setText("EXCLUSIVE PACK!");
             txtClaimBtn.setText("OPEN PACK");
         } else if (esPremioExtra) {
-            // 👇 NUEVO: Diseño del Sticker Extra (Con el fondo especial) 👇
             String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
 
-            // Ponemos el fondo animado gacha_bg.png detrás del sticker
-            Glide.with(this).load(baseUrl + premioFinal.pack_identifier + "/gacha_bg.png").into(new com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                @Override
-                public void onResourceReady(@androidx.annotation.NonNull android.graphics.drawable.Drawable resource, @androidx.annotation.Nullable com.bumptech.glide.request.transition.Transition<? super android.graphics.drawable.Drawable> transition) {
-                    imgItem.setBackground(resource);
-                }
-                @Override public void onLoadCleared(@androidx.annotation.Nullable android.graphics.drawable.Drawable placeholder) {}
-            });
-            // Cargamos el sticker transparente encima
-            Glide.with(this).load(baseUrl + premioFinal.pack_identifier + "/" + premioFinal.image).into(imgItem);
+            // 👇 CORRECCIÓN: Solo cargamos la carta misteriosa girando (Sin revelar el sticker aún) 👇
+            imgItem.setBackground(null); // Limpiamos cualquier fondo residual
+            Glide.with(this).load(baseUrl + premioFinal.pack_identifier + "/gacha_bg.png").into(imgItem);
+
             txtTitle.setText("SECRET STICKER!");
             txtClaimBtn.setText("CLAIM REWARD");
         } else {
@@ -3073,7 +3072,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
 
             } else if (esPremioExtra) {
-                // 👇 NUEVO: GUARDAR STICKER EXTRA EN MEMORIA 👇
+                // GUARDAR STICKER EXTRA EN MEMORIA
                 android.content.SharedPreferences gachaPrefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE);
                 Set<String> extras = new HashSet<>(gachaPrefs.getStringSet("extras_" + premioFinal.pack_identifier, new HashSet<>()));
                 extras.add(premioFinal.image);
@@ -3090,8 +3089,27 @@ public class MainActivity extends AppCompatActivity {
                             .update("unlocked_gacha_packs", FieldValue.arrayUnion(premioFinal.pack_identifier));
                 }
 
-                CustomToast.makeText(this, "Secret Sticker added to Favorites! 🌟", Toast.LENGTH_LONG).show();
                 fusionarYSubirDatosLocales(); // Guardar en la nube
+
+                // 👇 NUEVO: Redirigir al álbum para ver la animación 👇
+                StickerPack packTarget = null;
+                if (Config.packs != null) {
+                    for (StickerPack p : Config.packs) {
+                        if (p.identifier.equals(premioFinal.pack_identifier)) {
+                            packTarget = p; break;
+                        }
+                    }
+                }
+
+                if (packTarget != null) {
+                    Config.selectedPack = packTarget;
+                    Intent intent = new Intent(MainActivity.this, StickerDetailsActivity.class);
+                    // Le enviamos el nombre del sticker para que sepa a cuál hacerle "Pop"
+                    intent.putExtra("ANIMATE_EXTRA", premioFinal.image);
+                    startActivity(intent);
+                } else {
+                    CustomToast.makeText(this, "Secret Sticker added to Favorites! 🌟", Toast.LENGTH_LONG).show();
+                }
 
             } else {
                 // GUARDAR WALLPAPER EN FAVORITOS

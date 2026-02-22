@@ -64,11 +64,11 @@ public class StickerDetailsActivity extends AppCompatActivity {
     private int unlockedCount = 0;
     private boolean isEventExpired = false;
 
-    // 👇 NUEVO: Variables para el control de Gacha 👇
+    // Variables para el control de Gacha
     private boolean isGachaPack = false;
     private Set<String> unlockedGachaStickers = new HashSet<>();
 
-    // 👇 NUEVO: Variables para los Extras 👇
+    // Variables para los Extras Mágicos
     private List<StickerPack.Sticker> combinedStickersList = new ArrayList<>();
     private int baseStickerCount = 0;
     private Set<String> unlockedExtras = new HashSet<>();
@@ -81,60 +81,59 @@ public class StickerDetailsActivity extends AppCompatActivity {
         TextView txtTitle = findViewById(R.id.txtDetailTitle);
         TextView txtAuthor = findViewById(R.id.txtDetailAuthor);
         ImageView imgPackTray = findViewById(R.id.imgPackTray);
-
         Button btnAdd = findViewById(R.id.btnAddToWhatsapp);
         Button btnSupport = findViewById(R.id.btnSupportArtist);
         ImageView btnShare = findViewById(R.id.btnShareApp);
+        RecyclerView rvGrid = findViewById(R.id.rvStickersGrid);
 
         if (Config.selectedPack != null) {
 
-            // 👇 1. FUSIÓN DE EXTRAS: Leemos los secretos y los añadimos al final de la lista 👇
+            // FUSIÓN DE EXTRAS
             baseStickerCount = Config.selectedPack.stickers != null ? Config.selectedPack.stickers.size() : 0;
             combinedStickersList.clear();
-            if (Config.selectedPack.stickers != null) combinedStickersList.addAll(Config.selectedPack.stickers);
+            if (Config.selectedPack.stickers != null) {
+                combinedStickersList.addAll(Config.selectedPack.stickers);
+            }
 
-            unlockedExtras = getSharedPreferences("GachaUnlocks", MODE_PRIVATE).getStringSet("extras_" + Config.selectedPack.identifier, new HashSet<>());
+            unlockedExtras = getSharedPreferences("GachaUnlocks", MODE_PRIVATE)
+                    .getStringSet("extras_" + Config.selectedPack.identifier, new HashSet<>());
 
             for (String extraImg : unlockedExtras) {
                 StickerPack.Sticker extra = new StickerPack.Sticker();
                 extra.imageFile = extraImg;
                 extra.emojis = new ArrayList<>();
-                extra.emojis.add("✨"); // WhatsApp leerá este emoji dinámico automáticamente
+                extra.emojis.add("✨");
                 extra.emojis.add("🤩");
                 combinedStickersList.add(extra);
             }
-            // 👆 FIN FUSIÓN 👆
 
-
-            // 👇 1. DETECTAR SI ES UN PACK DEL GACHA 👇
+            // DETECCIÓN DE PACK DEL GACHA
             isGachaPack = Config.selectedPack.status != null && Config.selectedPack.status.equalsIgnoreCase("gacha");
 
             if (isGachaPack) {
-                // Recuperar la memoria local de este pack específico
                 unlockedGachaStickers = getSharedPreferences("GachaUnlocks", MODE_PRIVATE)
                         .getStringSet("pack_" + Config.selectedPack.identifier, new HashSet<>());
 
-                // 👇 EL TOQUE DE ORO: Psicología de colección 👇
                 int unlocked = unlockedGachaStickers.size();
-                int total = Config.selectedPack.stickers.size();
+                int total = baseStickerCount;
 
                 if (unlocked >= total) {
-                    // Si ya tiene todo el pack, celebramos con un botón Dorado
-                    btnAdd.setText("ADD COMPLETE! 🏆");
+                    btnAdd.setText("ALBUM COMPLETE! 🏆");
                     btnAdd.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#F28744")));
                     btnAdd.setTextColor(Color.BLACK);
                 } else {
-                    // Le mostramos la fracción para que sepa cuántos le faltan para completar
                     btnAdd.setText("ADD (" + unlocked + "/" + total + ")");
                 }
-
             } else if (Config.selectedPack.isEvent && Config.selectedPack.eventStartDate != null) {
                 calcularStickersDesbloqueados();
-                if (!isEventExpired && unlockedCount < Config.selectedPack.stickers.size()) {
+                if (!isEventExpired && unlockedCount < baseStickerCount) {
                     btnAdd.setText("DAY (" + unlockedCount + ") + 1 COIN");
+                } else {
+                    btnAdd.setText("ADD TO WA (" + combinedStickersList.size() + ")");
                 }
             } else {
-                unlockedCount = Config.selectedPack.stickers.size();
+                unlockedCount = baseStickerCount;
+                btnAdd.setText("ADD TO WA (" + combinedStickersList.size() + ")");
             }
 
             txtTitle.setText(Config.selectedPack.name);
@@ -142,7 +141,6 @@ public class StickerDetailsActivity extends AppCompatActivity {
 
             String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
             String trayUrl = baseUrl + Config.selectedPack.identifier + "/" + Config.selectedPack.trayImageFile;
-
             Glide.with(this).load(trayUrl).transform(new CenterCrop(), new RoundedCorners(16)).into(imgPackTray);
 
             btnShare.setOnClickListener(v -> {
@@ -173,12 +171,12 @@ public class StickerDetailsActivity extends AppCompatActivity {
             }
         }
 
-        RecyclerView rvGrid = findViewById(R.id.rvStickersGrid);
         rvGrid.setLayoutManager(new GridLayoutManager(this, 3));
 
-        // Le pasamos al adaptador la nueva lista fusionada con todo
+        String extraToAnimate = getIntent().getStringExtra("ANIMATE_EXTRA");
+
         if (combinedStickersList != null && !combinedStickersList.isEmpty()) {
-            rvGrid.setAdapter(new StickerGridAdapter(combinedStickersList));
+            rvGrid.setAdapter(new StickerGridAdapter(combinedStickersList, extraToAnimate));
         }
 
         btnAdd.setOnClickListener(v -> {
@@ -193,6 +191,74 @@ public class StickerDetailsActivity extends AppCompatActivity {
 
         checkUpdateNote();
         checkMilestoneReward();
+
+        // 👇 EFECTO AUTO-SCROLL LENTO Y POP AL VENIR DE LA RULETA 👇
+        if (extraToAnimate != null && !extraToAnimate.isEmpty()) {
+            int targetPos = -1;
+            for (int i = 0; i < combinedStickersList.size(); i++) {
+                if (combinedStickersList.get(i).imageFile.equals(extraToAnimate)) {
+                    targetPos = i;
+                    break;
+                }
+            }
+            if (targetPos != -1) {
+                final int finalPos = targetPos;
+
+                // 1. Damos un respiro inicial (600ms) para que el álbum cargue visualmente
+                rvGrid.postDelayed(() -> {
+
+                    // 2. Creamos un "Chofer" personalizado para controlar la velocidad (60f fricción)
+                    androidx.recyclerview.widget.LinearSmoothScroller smoothScroller =
+                            new androidx.recyclerview.widget.LinearSmoothScroller(StickerDetailsActivity.this) {
+                                @Override
+                                protected float calculateSpeedPerPixel(android.util.DisplayMetrics displayMetrics) {
+                                    return 60f / displayMetrics.densityDpi;
+                                }
+                            };
+
+                    smoothScroller.setTargetPosition(finalPos);
+
+                    if (rvGrid.getLayoutManager() != null) {
+                        rvGrid.getLayoutManager().startSmoothScroll(smoothScroller);
+                    }
+
+                    // 3. Esperamos a que llegue abajo para hacer el "Pop"
+                    rvGrid.postDelayed(() -> {
+                        RecyclerView.ViewHolder vh = rvGrid.findViewHolderForAdapterPosition(finalPos);
+                        if (vh != null) {
+                            // Primero lo hacemos visible, luego hacemos el Pop
+                            ImageView imgToAnimate = vh.itemView.findViewById(R.id.sticker_image);
+                            if (imgToAnimate != null) {
+                                imgToAnimate.setVisibility(View.VISIBLE);
+                                imgToAnimate.setScaleX(0f);
+                                imgToAnimate.setScaleY(0f);
+                                imgToAnimate.animate()
+                                        .scaleX(1f)
+                                        .scaleY(1f)
+                                        .setDuration(600)
+                                        .setInterpolator(new OvershootInterpolator())
+                                        .withEndAction(() -> {
+                                            // Cuando termina el Pop, activamos los clicks y la levitación
+                                            vh.itemView.setClickable(true);
+                                            animarFlotacionSutil(imgToAnimate);
+                                        })
+                                        .start();
+                            }
+
+                            try {
+                                android.media.MediaPlayer mp = android.media.MediaPlayer.create(StickerDetailsActivity.this, R.raw.gachaopen);
+                                if (mp != null) {
+                                    mp.setOnCompletionListener(android.media.MediaPlayer::release);
+                                    mp.start();
+                                }
+                            } catch (Exception e) {}
+                        }
+                    }, 1200);
+
+                }, 600);
+            }
+        }
+        // 👆 FIN EFECTO AUTO-SCROLL 👆
     }
 
     private void calcularStickersDesbloqueados() {
@@ -203,26 +269,31 @@ public class StickerDetailsActivity extends AppCompatActivity {
             long diff = today.getTime() - startDate.getTime();
             long daysPassed = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) + 1;
 
-            if (daysPassed < 1) { unlockedCount = 0; }
-            else {
-                if (daysPassed > Config.selectedPack.stickers.size()) {
+            if (daysPassed < 1) {
+                unlockedCount = 0;
+            } else {
+                if (daysPassed > baseStickerCount) {
                     isEventExpired = true;
-                    unlockedCount = Config.selectedPack.stickers.size();
+                    unlockedCount = baseStickerCount;
                 } else {
                     unlockedCount = (int) daysPassed;
                     isEventExpired = false;
                 }
             }
         } catch (Exception e) {
-            unlockedCount = Config.selectedPack.stickers.size();
+            unlockedCount = baseStickerCount;
             isEventExpired = true;
         }
     }
 
     private class StickerGridAdapter extends RecyclerView.Adapter<StickerGridAdapter.ViewHolder> {
         private List<StickerPack.Sticker> stickerList;
+        private String extraToHide;
 
-        public StickerGridAdapter(List<StickerPack.Sticker> stickerList) { this.stickerList = stickerList; }
+        public StickerGridAdapter(List<StickerPack.Sticker> stickerList, String extraToHide) {
+            this.stickerList = stickerList;
+            this.extraToHide = extraToHide;
+        }
 
         @NonNull
         @Override
@@ -235,27 +306,52 @@ public class StickerDetailsActivity extends AppCompatActivity {
             StickerPack.Sticker sticker = stickerList.get(position);
             int diaActual = position + 1;
             String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+
+            boolean isExtraSticker = position >= baseStickerCount;
+
+            // Limpiamos la imagen para evitar cruces al hacer scroll
+            holder.image.setBackground(null);
+            holder.image.animate().cancel();
+            holder.image.setTranslationY(0f);
+
+            // Ocultar el sticker si es el que acaba de ganar
+            if (extraToHide != null && sticker.imageFile.equals(extraToHide)) {
+                holder.image.setVisibility(View.INVISIBLE);
+                holder.itemView.setClickable(false); // Para que no lo toquen mientras es invisible
+            } else {
+                holder.image.setVisibility(View.VISIBLE);
+                holder.itemView.setClickable(true);
+            }
+
             Glide.with(holder.itemView.getContext()).load(baseUrl + Config.selectedPack.identifier + "/" + sticker.imageFile).into(holder.image);
 
+            // LÓGICA DE PINTADO INTELIGENTE
+            if (isExtraSticker) {
+                holder.layoutRewardBadge.setVisibility(View.GONE);
+                holder.image.clearColorFilter();
+                holder.image.setAlpha(1.0f);
 
-            // 👇 2. EL PINTADO INTELIGENTE (GACHA VS NORMAL) 👇
-            if (isGachaPack) {
+                // FLOTACIÓN SUTIL: El extra levita suavemente (si no está oculto)
+                if (extraToHide == null || !sticker.imageFile.equals(extraToHide)) {
+                    animarFlotacionSutil(holder.image);
+                }
+
+                holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker, true));
+            }
+            else if (isGachaPack) {
                 holder.layoutRewardBadge.setVisibility(View.GONE);
 
                 if (unlockedGachaStickers.contains(sticker.imageFile)) {
-                    // DESBLOQUEADO (Color Completo)
                     holder.image.clearColorFilter();
                     holder.image.setAlpha(1.0f);
-                    holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
+                    holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker, false));
                 } else {
-                    // BLOQUEADO (Silueta Gris)
                     holder.image.setColorFilter(Color.parseColor("#444444"), PorterDuff.Mode.SRC_IN);
                     holder.image.setAlpha(0.6f);
                     holder.itemView.setOnClickListener(v -> mostrarPopupGachaBloqueado());
                 }
             }
             else if (Config.selectedPack.isEvent && !isEventExpired) {
-                // LÓGICA ORIGINAL DEL EVENTO...
                 SharedPreferences milestonePrefs = getSharedPreferences("EventMilestones", MODE_PRIVATE);
                 boolean yaReclamado = milestonePrefs.getBoolean("claimed_" + Config.selectedPack.identifier + "_" + diaActual, false);
 
@@ -285,16 +381,21 @@ public class StickerDetailsActivity extends AppCompatActivity {
                 } else {
                     holder.image.clearColorFilter();
                     holder.image.setAlpha(1.0f);
-                    if (diaActual % 5 != 0) holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
+                    if (diaActual % 5 != 0) holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker, false));
                 }
             } else {
                 holder.layoutRewardBadge.setVisibility(View.GONE);
                 holder.image.clearColorFilter();
                 holder.image.setAlpha(1.0f);
-                holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker));
+                holder.itemView.setOnClickListener(v -> mostrarPreviewGrande(sticker, false));
             }
         }
-        @Override public int getItemCount() { return stickerList.size(); }
+
+        @Override
+        public int getItemCount() {
+            return stickerList.size();
+        }
+
         class ViewHolder extends RecyclerView.ViewHolder {
             ImageView image; View layoutRewardBadge;
             public ViewHolder(@NonNull View itemView) {
@@ -305,14 +406,12 @@ public class StickerDetailsActivity extends AppCompatActivity {
         }
     }
 
-    // 👇 3. POPUP DE SILUETA DE GACHA 👇
     private void mostrarPopupGachaBloqueado() {
         android.app.Dialog dialog = new android.app.Dialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_missed_event, null);
         dialog.setContentView(view);
         if(dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-        // Magia para cambiar los textos sin conocer los IDs exactos de tu XML
         modificarTextosParaGacha((ViewGroup) view);
 
         View btnClose = view.findViewById(R.id.btnGotItMissed);
@@ -330,25 +429,20 @@ public class StickerDetailsActivity extends AppCompatActivity {
                 TextView tv = (TextView) v;
                 String textoOriginal = tv.getText().toString();
 
-                // 1. Reemplazamos el Título
                 if (textoOriginal.equals("Too Late!")) {
                     tv.setText("LOCKED STICKER");
                 }
-                // 2. Reemplazamos el primer bloque de texto
                 else if (textoOriginal.contains("This exclusive reward")) {
                     tv.setText("Play the Gacha roulette on the Home screen to reveal this sticker!");
                 }
-                // 3. Reemplazamos el segundo bloque de texto (Para que no se repita)
                 else if (textoOriginal.contains("Stay tuned")) {
                     tv.setText("Spin the wheel every day to complete your collection!");
-                    tv.setTextColor(Color.parseColor("#2196F3")); // Le ponemos el azul del gacha
+                    tv.setTextColor(Color.parseColor("#2196F3"));
                 }
-                // 4. Actualizamos el texto del botón
                 else if (v.getId() == R.id.btnGotItMissed) {
                     tv.setText("Got it!");
                 }
             }
-            // Si es un contenedor, buscamos más adentro
             else if (v instanceof ViewGroup) {
                 modificarTextosParaGacha((ViewGroup) v);
             }
@@ -371,7 +465,6 @@ public class StickerDetailsActivity extends AppCompatActivity {
     }
 
     private void mostrarPopupRegaloWallpaper(int dia, boolean yaReclamado) {
-        // Lógica original del regalo...
         android.app.Dialog dialog = new android.app.Dialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_update_note, null);
         dialog.setContentView(view);
@@ -485,11 +578,17 @@ public class StickerDetailsActivity extends AppCompatActivity {
 
     private void restaurarBoton(Button btn) {
         if (isGachaPack) {
-            btn.setText("DAY (" + unlockedGachaStickers.size() + ")");
-        } else if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < Config.selectedPack.stickers.size()) {
+            int unlocked = unlockedGachaStickers.size();
+            int total = baseStickerCount;
+            if (unlocked >= total) {
+                btn.setText("ALBUM COMPLETE! 🏆");
+            } else {
+                btn.setText("ADD (" + unlocked + "/" + total + ")");
+            }
+        } else if (Config.selectedPack.isEvent && !isEventExpired && unlockedCount < baseStickerCount) {
             btn.setText("DAY (" + unlockedCount + ") + 1 COIN");
         } else {
-            btn.setText("Add to WhatsApp");
+            btn.setText("ADD TO WA (" + combinedStickersList.size() + ")");
         }
         btn.setEnabled(true);
         btn.setAlpha(1.0f);
@@ -517,29 +616,39 @@ public class StickerDetailsActivity extends AppCompatActivity {
         d.show();
     }
 
-    // 👇 4. HACK MAESTRO DE DESCARGA PARA WHATSAPP 👇
     private void iniciarDescargaYEnvio() {
         mostrarCargando();
         new Thread(() -> {
             try {
+                List<StickerPack.Sticker> unlockedList = new ArrayList<>();
+
                 if (isGachaPack) {
-                    List<StickerPack.Sticker> unlockedList = new ArrayList<>();
-                    for (StickerPack.Sticker s : Config.selectedPack.stickers) {
-                        if (unlockedGachaStickers.contains(s.imageFile)) {
+                    for (StickerPack.Sticker s : combinedStickersList) {
+                        if (unlockedGachaStickers.contains(s.imageFile) || s.imageFile.startsWith("gacha_extra")) {
                             unlockedList.add(s);
                         }
                     }
-                    StickerPack waPack = new StickerPack();
-                    waPack.identifier = Config.selectedPack.identifier;
-                    waPack.name = Config.selectedPack.name;
-                    waPack.publisher = Config.selectedPack.publisher;
-                    waPack.trayImageFile = Config.selectedPack.trayImageFile;
-                    waPack.stickers = unlockedList;
-
-                    Config.selectedPack = waPack; // Engañamos a WhatsApp
+                } else if (Config.selectedPack.isEvent && !isEventExpired) {
+                    for (int i = 0; i < unlockedCount; i++) {
+                        unlockedList.add(combinedStickersList.get(i));
+                    }
+                    for (int i = baseStickerCount; i < combinedStickersList.size(); i++) {
+                        unlockedList.add(combinedStickersList.get(i));
+                    }
+                } else {
+                    unlockedList.addAll(combinedStickersList);
                 }
 
-                descargarArchivos();
+                StickerPack waPack = new StickerPack();
+                waPack.identifier = Config.selectedPack.identifier;
+                waPack.name = Config.selectedPack.name;
+                waPack.publisher = Config.selectedPack.publisher;
+                waPack.trayImageFile = Config.selectedPack.trayImageFile;
+                waPack.stickers = unlockedList;
+
+                Config.selectedPack = waPack;
+
+                descargarArchivos(unlockedList);
                 runOnUiThread(() -> { cerrarCargando(); enviarIntentAWhatsApp(); });
             } catch (Exception e) {
                 runOnUiThread(() -> { cerrarCargando(); CustomToast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show(); });
@@ -547,23 +656,14 @@ public class StickerDetailsActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void descargarArchivos() throws Exception {
+    private void descargarArchivos(List<StickerPack.Sticker> stickersToDownload) throws Exception {
         File dir = new File(getFilesDir(), "stickers/" + Config.selectedPack.identifier);
         if (!dir.exists()) dir.mkdirs();
         String url = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1) + Config.selectedPack.identifier + "/";
         descargarArchivo(url + Config.selectedPack.trayImageFile, new File(dir, Config.selectedPack.trayImageFile));
 
-        int limit;
-        if (isGachaPack) {
-            limit = Config.selectedPack.stickers.size(); // Ya está filtrado por el hack
-        } else if (Config.selectedPack.isEvent) {
-            limit = unlockedCount;
-        } else {
-            limit = Config.selectedPack.stickers.size();
-        }
-
-        for (int i = 0; i < limit; i++) {
-            descargarArchivo(url + Config.selectedPack.stickers.get(i).imageFile, new File(dir, Config.selectedPack.stickers.get(i).imageFile));
+        for (StickerPack.Sticker s : stickersToDownload) {
+            descargarArchivo(url + s.imageFile, new File(dir, s.imageFile));
         }
     }
 
@@ -599,14 +699,50 @@ public class StickerDetailsActivity extends AppCompatActivity {
     }
 
     public void mostrarPreviewGrande(StickerPack.Sticker s) {
+        mostrarPreviewGrande(s, false);
+    }
+
+    public void mostrarPreviewGrande(StickerPack.Sticker s, boolean isExtra) {
         View v = getLayoutInflater().inflate(R.layout.dialog_sticker_preview, null);
-        Glide.with(this).load(Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1) + Config.selectedPack.identifier + "/" + s.imageFile).into((ImageView) v.findViewById(R.id.imgPreviewBig));
+        ImageView imgPreview = v.findViewById(R.id.imgPreviewBig);
+
+        Glide.with(this).load(Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1) + Config.selectedPack.identifier + "/" + s.imageFile).into(imgPreview);
+
+        if (isExtra) {
+            imgPreview.setScaleX(0.85f);
+            imgPreview.setScaleY(0.85f);
+        }
+
         AlertDialog d = new AlertDialog.Builder(this).setView(v).create();
         v.setOnClickListener(view -> d.dismiss());
-        if (d.getWindow() != null) { d.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT)); d.getWindow().setDimAmount(0.7f); }
+        if (d.getWindow() != null) {
+            d.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            d.getWindow().setDimAmount(0.7f);
+        }
         d.show();
+
         v.setScaleX(0.5f); v.setScaleY(0.5f); v.setAlpha(0f);
         v.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
+
+        if (isExtra) {
+            imgPreview.animate().translationY(-15f).setDuration(800).withEndAction(() -> {
+                animarFlotacion(imgPreview);
+            }).start();
+        }
+    }
+
+    private void animarFlotacion(View v) {
+        if (v == null || v.getContext() == null) return;
+        v.animate().translationY(15f).setDuration(1500).setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).withEndAction(() -> {
+            v.animate().translationY(-15f).setDuration(1500).setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).withEndAction(() -> animarFlotacion(v)).start();
+        }).start();
+    }
+
+    private void animarFlotacionSutil(View v) {
+        if (v == null || v.getContext() == null) return;
+        v.animate().translationY(6f).setDuration(1200).setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).withEndAction(() -> {
+            v.animate().translationY(-6f).setDuration(1200).setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).withEndAction(() -> animarFlotacionSutil(v)).start();
+        }).start();
     }
 
     private void cargarAnuncioParaRecompensa(Button btn, String wallId, int dia, android.app.Dialog dialogPadre) {
