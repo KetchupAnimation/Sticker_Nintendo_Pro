@@ -81,9 +81,17 @@ public class GachaUnboxAdapter extends RecyclerView.Adapter<GachaUnboxAdapter.Vi
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgSticker;
+        View badge; // <--- Variable para atrapar el punto rojo
+
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgSticker = itemView.findViewById(R.id.sticker_image); // Asumiendo que así se llama en tu item_sticker_single.xml
+            imgSticker = itemView.findViewById(R.id.sticker_image);
+
+            // 👇 Buscamos el badge rojo y lo apagamos 👇
+            badge = itemView.findViewById(R.id.layoutRewardBadge);
+            if (badge != null) {
+                badge.setVisibility(View.GONE);
+            }
         }
     }
 }
