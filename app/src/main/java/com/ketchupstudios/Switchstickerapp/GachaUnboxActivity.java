@@ -156,14 +156,9 @@ public class GachaUnboxActivity extends AppCompatActivity {
                 waPack.trayImageFile = currentPack.trayImageFile;
                 waPack.stickers = unlockedList;
 
-                // 👇 EL HACK MAESTRO: Reemplazamos temporalmente el pack en la memoria global 👇
-                // Así, cuando WhatsApp lea tu ContentProvider, verá que el pack solo tiene los desbloqueados.
-                for (int i = 0; i < Config.packs.size(); i++) {
-                    if (Config.packs.get(i).identifier.equals(currentPack.identifier)) {
-                        Config.packs.set(i, waPack);
-                        break;
-                    }
-                }
+                // 👇 EL HACK MAESTRO (CORREGIDO) 👇
+                // Solo engañamos al selectedPack. Ya NO tocamos Config.packs para no borrar
+                // el resto de tus siluetas de la memoria del celular.
                 Config.selectedPack = waPack;
 
                 // 3. Descargar los archivos físicos

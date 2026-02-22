@@ -2728,29 +2728,48 @@ public class MainActivity extends AppCompatActivity {
 
         android.content.SharedPreferences appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         Set<String> favWalls = appPrefs.getStringSet("fav_wallpapers_ids", new HashSet<>());
+        android.content.SharedPreferences gachaUnlocksPrefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE);
 
-        // 1. Verificamos si ya tiene la colección completa
-        int ownedCount = 0;
+        // 1. CREAMOS UNA URNA SOLO CON LOS PREMIOS QUE AÚN NO TIENE COMPLETOS
+        List<GachaItem> premiosDisponibles = new ArrayList<>();
+
         for (GachaItem item : todosLosPremios) {
-            if (favWalls.contains(item.image)) ownedCount++;
+            if ("sticker_pack".equals(item.type)) {
+                // Verificar cuántos stickers tiene desbloqueados de este pack
+                Set<String> unlockedStickers = gachaUnlocksPrefs.getStringSet("pack_" + item.pack_identifier, new HashSet<>());
+                int totalStickers = 0;
+                if (Config.packs != null) {
+                    for (StickerPack p : Config.packs) {
+                        if (p.identifier.equals(item.pack_identifier)) {
+                            totalStickers = p.stickers.size();
+                            break;
+                        }
+                    }
+                }
+                // Si aún quedan siluetas por desbloquear, lo metemos a la urna
+                if (totalStickers > 0 && unlockedStickers.size() < totalStickers) {
+                    premiosDisponibles.add(item);
+                }
+            } else {
+                // Si es Wallpaper, verificamos si ya está en favoritos
+                if (!favWalls.contains(item.image)) {
+                    premiosDisponibles.add(item);
+                }
+            }
         }
-        boolean tieneTodos = (ownedCount >= todosLosPremios.size());
 
+        boolean tieneTodos = premiosDisponibles.isEmpty();
         GachaItem premio = null;
         boolean esMoneda = false;
         int monedasGanadas = 0;
 
-        // 2. Tiramos los dados (20% de que salgan monedas de forma natural, o 100% si ya tiene todos)
+        // 2. TIRAMOS LOS DADOS (20% Monedas, 80% Premio Nuevo Garantizado)
         int rollTipo = new java.util.Random().nextInt(100);
         if (tieneTodos || rollTipo < 20) {
             esMoneda = true;
         } else {
-            // Saca un Wallpaper al azar
-            premio = todosLosPremios.get(new java.util.Random().nextInt(todosLosPremios.size()));
-            // Si le tocó repetido, lo convertimos en un premio de monedas para que no pierda su tiro
-            if (favWalls.contains(premio.image)) {
-                esMoneda = true;
-            }
+            // Sacamos un premio EXCLUSIVAMENTE de los que le faltan (cero repetidos)
+            premio = premiosDisponibles.get(new java.util.Random().nextInt(premiosDisponibles.size()));
         }
 
         // 3. Si ganó monedas, calculamos cuántas con tus probabilidades
