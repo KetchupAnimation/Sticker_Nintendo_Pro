@@ -106,7 +106,21 @@ public class GachaUnboxActivity extends AppCompatActivity {
     public void onStickerUnlocked(String imageFile) {
         sessionUnlockedCount++;
         unlockedStickersSet.add(imageFile);
+
+        // 1. Guardar Local
         prefs.edit().putStringSet("pack_" + packId, unlockedStickersSet).apply();
+
+        // 👇 NUEVO: 2. Guardar en Nube al instante (Si tiene sesión) 👇
+        com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            // Usamos SetOptions.merge() para que no borre los demás packs guardados en "gacha_progress"
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(user.getUid())
+                    .set(java.util.Collections.singletonMap("gacha_progress",
+                                    java.util.Collections.singletonMap("pack_" + packId, com.google.firebase.firestore.FieldValue.arrayUnion(imageFile))),
+                            com.google.firebase.firestore.SetOptions.merge());
+        }
+        // 👆 FIN NUEVO 👆
 
         txtCounter.setText("Choose " + maxSessionUnlocks + " to unlock: " + sessionUnlockedCount + "/" + maxSessionUnlocks);
 

@@ -693,10 +693,13 @@ public class MainActivity extends AppCompatActivity {
         String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
         Glide.with(this).load(baseUrl + "banner_12.png").transform(new CenterCrop()).into(banner);
 
+
+        RecyclerView rvPacks = viewFavs.findViewById(R.id.rvFavPacks);
         RecyclerView rvWallpapers = viewFavs.findViewById(R.id.rvFavWallpapers);
         RecyclerView rvWidgets = viewFavs.findViewById(R.id.rvFavWidgets);
         RecyclerView rvBattery = viewFavs.findViewById(R.id.rvFavBattery);
 
+        TextView txtTitlePacks = viewFavs.findViewById(R.id.lblFavPacks);
         TextView txtTitleWall = viewFavs.findViewById(R.id.lblFavWallpapers);
         TextView txtTitleWid = viewFavs.findViewById(R.id.lblFavWidgets);
         TextView txtTitleBat = viewFavs.findViewById(R.id.lblFavBattery);
@@ -749,10 +752,38 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        // 👇 NUEVO: Cargar Gacha Packs Desbloqueados 👇
+        Set<String> unlockedPacksIds = appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>());
+        List<StickerPack> favPacksList = new ArrayList<>();
+        if (Config.packs != null) {
+            for (StickerPack p : Config.packs) {
+                if (unlockedPacksIds.contains(p.identifier)) {
+                    favPacksList.add(p);
+                }
+            }
+        }
+        boolean hasPacks = !favPacksList.isEmpty();
+        // 👆 FIN NUEVO 👆
+
         boolean hasWall = !favWallList.isEmpty();
         boolean hasWid = !favWidgetList.isEmpty();
         boolean hasBat = !favBatList.isEmpty();
         boolean isEmptyAll = !hasWall && !hasWid && !hasBat;
+
+        // 👇 NUEVO: Llenar el RecyclerView de Packs Horizontalmente 👇
+        if (hasPacks) {
+            if (txtTitlePacks != null) txtTitlePacks.setVisibility(View.VISIBLE);
+            if (rvPacks != null) {
+                rvPacks.setVisibility(View.VISIBLE);
+                rvPacks.setLayoutManager(new GridLayoutManager(this, 1, GridLayoutManager.HORIZONTAL, false));
+                rvPacks.setAdapter(new StickerPackAdapter(favPacksList, this, R.layout.item_sticker_mini));
+            }
+        } else {
+            if (txtTitlePacks != null) txtTitlePacks.setVisibility(View.GONE);
+            if (rvPacks != null) rvPacks.setVisibility(View.GONE);
+        }
+        // 👆 FIN NUEVO 👆
+
 
         if (hasWall) {
             if (txtTitleWall != null) txtTitleWall.setVisibility(View.VISIBLE);
@@ -1604,7 +1635,32 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void abrirPantallaDetalles(StickerPack pack) {
-        Config.selectedPack = pack;
+        // 👇 NUEVO: Interceptar packs del Gacha para mostrar solo lo desbloqueado 👇
+        if (pack.status != null && pack.status.equalsIgnoreCase("gacha")) {
+            Set<String> unlocked = getSharedPreferences("GachaUnlocks", MODE_PRIVATE)
+                    .getStringSet("pack_" + pack.identifier, new HashSet<>());
+
+            StickerPack filteredPack = new StickerPack();
+            filteredPack.identifier = pack.identifier;
+            filteredPack.name = pack.name;
+            filteredPack.publisher = pack.publisher;
+            filteredPack.trayImageFile = pack.trayImageFile;
+            filteredPack.status = pack.status;
+            filteredPack.isPremium = pack.isPremium;
+            filteredPack.artistLink = pack.artistLink;
+            filteredPack.updateNoteImage = pack.updateNoteImage;
+            filteredPack.stickers = new ArrayList<>();
+
+            for (StickerPack.Sticker s : pack.stickers) {
+                if (unlocked.contains(s.imageFile)) {
+                    filteredPack.stickers.add(s);
+                }
+            }
+            Config.selectedPack = filteredPack;
+        } else {
+            Config.selectedPack = pack;
+        }
+        // 👆 FIN NUEVO 👆
         startActivity(new Intent(this, StickerDetailsActivity.class));
     }
 
@@ -1712,6 +1768,15 @@ public class MainActivity extends AppCompatActivity {
         actualizarMonedasUI();
         actualizarSaludo();
 
+        // 👇 NUEVO: Refrescar Favoritos en tiempo real al volver del minijuego 👇
+        if (!isHome && fragmentContainer.getChildCount() > 0) {
+            View currentView = fragmentContainer.getChildAt(0);
+            if (currentView != null && currentView.findViewById(R.id.rvFavPacks) != null) {
+                mostrarVistaFavoritos();
+            }
+        }
+        // 👆 FIN NUEVO 👆
+
         // --- LÓGICA FINAL DE LA CAMPANA (ONBOARDING + NOTIFICACIÓN) ---
         android.content.SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
 
@@ -1814,22 +1879,42 @@ public class MainActivity extends AppCompatActivity {
         android.content.SharedPreferences appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         android.content.SharedPreferences widgetPrefs = getSharedPreferences("WidgetPrefs", MODE_PRIVATE);
         android.content.SharedPreferences rewardsPrefs = getSharedPreferences("UserRewards", MODE_PRIVATE);
+        android.content.SharedPreferences gachaPrefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE); // 👇 NUEVO
 
         Set<String> localWalls = appPrefs.getStringSet("fav_wallpapers_ids", new HashSet<>());
-        Set<String> localWidgets = widgetPrefs.getStringSet("fav_wallpapers", new HashSet<>()); // Ojo: usa esta key
+        Set<String> localWidgets = widgetPrefs.getStringSet("fav_wallpapers", new HashSet<>());
         Set<String> localBattery = appPrefs.getStringSet("fav_battery_ids", new HashSet<>());
         int localCoins = rewardsPrefs.getInt("skip_tickets", 0);
+        Set<String> localGachaPacks = appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>()); // 👇 NUEVO
 
         // 2. CONSULTAR NUBE PARA DECIDIR (MERGE INTELIGENTE)
         docRef.get().addOnSuccessListener(snapshot -> {
             Map<String, Object> updates = new HashMap<>();
 
-            // A) FAVORITOS: Usamos 'arrayUnion' para sumar sin duplicar ni borrar lo que ya estaba
+            // A) FAVORITOS: Usamos 'arrayUnion' para sumar sin duplicar
             if (!localWalls.isEmpty()) updates.put("fav_wallpapers", FieldValue.arrayUnion(localWalls.toArray()));
             if (!localWidgets.isEmpty()) updates.put("fav_widgets", FieldValue.arrayUnion(localWidgets.toArray()));
             if (!localBattery.isEmpty()) updates.put("fav_battery", FieldValue.arrayUnion(localBattery.toArray()));
+            if (!localGachaPacks.isEmpty()) updates.put("unlocked_gacha_packs", FieldValue.arrayUnion(localGachaPacks.toArray())); // 👇 NUEVO
 
-            // --- C) JUEGOS: Preparamos los juegos locales para subirlos ---
+            // 👇 NUEVO: B) PROGRESO DE STICKERS INDIVIDUALES (MAPA) 👇
+            Map<String, Object> progressMap = new HashMap<>();
+            Map<String, ?> allGachaKeys = gachaPrefs.getAll();
+            for (Map.Entry<String, ?> entry : allGachaKeys.entrySet()) {
+                if (entry.getKey().startsWith("pack_") && entry.getValue() instanceof Set) {
+                    Set<String> unlockedStickers = (Set<String>) entry.getValue();
+                    if (!unlockedStickers.isEmpty()) {
+                        progressMap.put(entry.getKey(), FieldValue.arrayUnion(unlockedStickers.toArray()));
+                    }
+                }
+            }
+            if (!progressMap.isEmpty()) {
+                // Lo guardamos como un sub-directorio ordenado en Firebase
+                updates.put("gacha_progress", progressMap);
+            }
+            // 👆 FIN NUEVO 👆
+
+            // C) JUEGOS: Preparamos los juegos locales para subirlos
             android.content.SharedPreferences walletPrefs = getSharedPreferences("IdWalletPrefs", MODE_PRIVATE);
             List<Map<String, String>> localGames = new ArrayList<>();
             for (int i = 0; i < 3; i++) {
@@ -1842,17 +1927,13 @@ public class MainActivity extends AppCompatActivity {
                     localGames.add(gMap);
                 }
             }
-            // Solo subimos si la nube NO tiene juegos aún (para no borrar los que ya tenga guardados)
             if (!localGames.isEmpty()) {
                 if (!snapshot.exists() || !snapshot.contains("favorite_games")) {
                     updates.put("favorite_games", localGames);
                 }
             }
-            // -------------------------------------------------------------
 
-            // B) MONEDAS:
-            // Si el usuario es nuevo en la nube (no tiene campo 'coins'), subimos sus monedas locales.
-            // Si YA tiene monedas en la nube, respetamos la nube (para evitar trampas de borrar datos y re-logear).
+            // D) MONEDAS:
             if (!snapshot.exists() || !snapshot.contains("coins")) {
                 updates.put("coins", localCoins);
             }
@@ -1860,13 +1941,9 @@ public class MainActivity extends AppCompatActivity {
             // 3. EJECUTAR LA SUBIDA
             if (!updates.isEmpty()) {
                 docRef.set(updates, SetOptions.merge())
-                        .addOnSuccessListener(aVoid -> {
-                            // Una vez subido y mezclado todo, descargamos para tener la versión final
-                            sincronizarFavoritosDesdeNube();
-                        })
-                        .addOnFailureListener(e -> sincronizarFavoritosDesdeNube()); // Si falla, sincronizamos igual
+                        .addOnSuccessListener(aVoid -> sincronizarFavoritosDesdeNube())
+                        .addOnFailureListener(e -> sincronizarFavoritosDesdeNube());
             } else {
-                // Si no había nada local nuevo, solo descargamos
                 sincronizarFavoritosDesdeNube();
             }
         }).addOnFailureListener(e -> sincronizarFavoritosDesdeNube());
@@ -1940,6 +2017,28 @@ public class MainActivity extends AppCompatActivity {
                             getSharedPreferences("AppPrefs", MODE_PRIVATE)
                                     .edit().putStringSet("fav_battery_ids", set).apply();
                         }
+
+                        // 👇 NUEVO: SINCRONIZAR PACKS GACHA DESBLOQUEADOS 👇
+                        List<String> cloudGachaPacks = (List<String>) doc.get("unlocked_gacha_packs");
+                        if (cloudGachaPacks != null) {
+                            Set<String> setPacks = new HashSet<>(cloudGachaPacks);
+                            getSharedPreferences("AppPrefs", MODE_PRIVATE)
+                                    .edit().putStringSet("unlocked_gacha_packs", setPacks).apply();
+                        }
+
+                        // 👇 NUEVO: SINCRONIZAR STICKERS INDIVIDUALES DEL GACHA 👇
+                        Map<String, Object> cloudGachaProgress = (Map<String, Object>) doc.get("gacha_progress");
+                        if (cloudGachaProgress != null) {
+                            android.content.SharedPreferences.Editor gachaEditor = getSharedPreferences("GachaUnlocks", MODE_PRIVATE).edit();
+                            for (Map.Entry<String, Object> entry : cloudGachaProgress.entrySet()) {
+                                if (entry.getValue() instanceof List) {
+                                    List<String> list = (List<String>) entry.getValue();
+                                    gachaEditor.putStringSet(entry.getKey(), new HashSet<>(list));
+                                }
+                            }
+                            gachaEditor.apply();
+                        }
+                        // 👆 FIN NUEVO 👆
 
                         // --- 2. SINCRONIZAR DATOS DE ID WALLET (PERFIL Y AMIGOS) ---
 
