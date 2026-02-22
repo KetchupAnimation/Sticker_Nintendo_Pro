@@ -95,7 +95,7 @@ public class GachaUnboxActivity extends AppCompatActivity {
                 txtCounter.setText("Choose " + maxSessionUnlocks + " to unlock: 0/" + maxSessionUnlocks);
             }
 
-            recycler.setLayoutManager(new GridLayoutManager(this, 4));
+            recycler.setLayoutManager(new GridLayoutManager(this, 3));
             GachaUnboxAdapter adapter = new GachaUnboxAdapter(this, currentPack, this, unlockedStickersSet);
             recycler.setAdapter(adapter);
         }
@@ -192,13 +192,21 @@ public class GachaUnboxActivity extends AppCompatActivity {
     }
 
     private void enviarIntentAWhatsApp() {
-        Intent intent = new Intent();
-        intent.setAction("com.whatsapp.intent.action.ENABLE_STICKER_PACK");
+        Intent intent = new Intent("com.whatsapp.intent.action.ENABLE_STICKER_PACK");
         intent.putExtra("sticker_pack_id", currentPack.identifier);
-        intent.putExtra("sticker_pack_authority", BuildConfig.APPLICATION_ID + ".provider");
         intent.putExtra("sticker_pack_name", currentPack.name);
-        try { startActivityForResult(intent, 200); }
-        catch (Exception e) { Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_SHORT).show(); }
+
+        // 👇 CORRECCIÓN 1: La autoridad exacta de tu Provider 👇
+        intent.putExtra("sticker_pack_authority", "com.ketchupstudios.Switchstickerapp.stickercontentprovider");
+
+        // 👇 CORRECCIÓN 2: Permiso obligatorio de lectura para WhatsApp 👇
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        try {
+            startActivityForResult(intent, 200);
+        } catch (Exception e) {
+            Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void mostrarCargando() {
