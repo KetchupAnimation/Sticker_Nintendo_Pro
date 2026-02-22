@@ -2823,7 +2823,16 @@ public class MainActivity extends AppCompatActivity {
                 if (totalStickers > 0 && unlockedStickers.size() < totalStickers) {
                     premiosDisponibles.add(item);
                 }
-            } else {
+            }
+            // 👇 NUEVO: Lógica Anti-Repetidos para Stickers Extra 👇
+            else if ("extra_sticker".equals(item.type)) {
+                Set<String> unlockedExtras = gachaUnlocksPrefs.getStringSet("extras_" + item.pack_identifier, new HashSet<>());
+                if (!unlockedExtras.contains(item.image)) {
+                    premiosDisponibles.add(item);
+                }
+            }
+            // 👆 FIN NUEVO 👆
+            else {
                 // Si es Wallpaper, verificamos si ya está en favoritos
                 if (!favWalls.contains(item.image)) {
                     premiosDisponibles.add(item);
