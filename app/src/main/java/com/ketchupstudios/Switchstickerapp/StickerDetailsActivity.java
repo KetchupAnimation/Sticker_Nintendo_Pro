@@ -91,8 +91,19 @@ public class StickerDetailsActivity extends AppCompatActivity {
                 unlockedGachaStickers = getSharedPreferences("GachaUnlocks", MODE_PRIVATE)
                         .getStringSet("pack_" + Config.selectedPack.identifier, new HashSet<>());
 
-                // Actualizar botón
-                btnAdd.setText("UNLOCKED (" + unlockedGachaStickers.size() + ")");
+                // 👇 EL TOQUE DE ORO: Psicología de colección 👇
+                int unlocked = unlockedGachaStickers.size();
+                int total = Config.selectedPack.stickers.size();
+
+                if (unlocked >= total) {
+                    // Si ya tiene todo el pack, celebramos con un botón Dorado
+                    btnAdd.setText("ADD COMPLETE! 🏆");
+                    btnAdd.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#F28744")));
+                    btnAdd.setTextColor(Color.BLACK);
+                } else {
+                    // Le mostramos la fracción para que sepa cuántos le faltan para completar
+                    btnAdd.setText("ADD (" + unlocked + "/" + total + ")");
+                }
 
             } else if (Config.selectedPack.isEvent && Config.selectedPack.eventStartDate != null) {
                 calcularStickersDesbloqueados();
@@ -289,16 +300,31 @@ public class StickerDetailsActivity extends AppCompatActivity {
     private void modificarTextosParaGacha(ViewGroup vg) {
         for (int i = 0; i < vg.getChildCount(); i++) {
             View v = vg.getChildAt(i);
-            // Evitamos tocar el texto del botón por si quieres que diga "Got it"
-            if (v instanceof TextView && v.getId() != R.id.btnGotItMissed) {
+
+            if (v instanceof TextView) {
                 TextView tv = (TextView) v;
-                // Si el texto es corto, seguro es el título
-                if (tv.getText().length() < 20) {
+                String textoOriginal = tv.getText().toString();
+
+                // 1. Reemplazamos el Título
+                if (textoOriginal.equals("Too Late!")) {
                     tv.setText("LOCKED STICKER");
-                } else { // Si es largo, es la descripción
-                    tv.setText("Play the Gacha roulette on the Home screen to reveal this exclusive sticker!");
                 }
-            } else if (v instanceof ViewGroup) {
+                // 2. Reemplazamos el primer bloque de texto
+                else if (textoOriginal.contains("This exclusive reward")) {
+                    tv.setText("Play the Gacha roulette on the Home screen to reveal this sticker!");
+                }
+                // 3. Reemplazamos el segundo bloque de texto (Para que no se repita)
+                else if (textoOriginal.contains("Stay tuned")) {
+                    tv.setText("Spin the wheel every day to complete your collection!");
+                    tv.setTextColor(Color.parseColor("#2196F3")); // Le ponemos el azul del gacha
+                }
+                // 4. Actualizamos el texto del botón
+                else if (v.getId() == R.id.btnGotItMissed) {
+                    tv.setText("Got it!");
+                }
+            }
+            // Si es un contenedor, buscamos más adentro
+            else if (v instanceof ViewGroup) {
                 modificarTextosParaGacha((ViewGroup) v);
             }
         }
