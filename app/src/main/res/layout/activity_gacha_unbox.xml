@@ -5,6 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:background="#F5F5F5"
     android:fitsSystemWindows="false">
 
@@ -12,14 +14,12 @@
         android:id="@+id/recyclerGachaUnbox"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingHorizontal="16dp"
+        android:clipToPadding="false"
+        android:clipChildren="false"
+        android:paddingHorizontal="12dp"
         android:paddingTop="180dp"
         android:paddingBottom="130dp"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardHeader"
@@ -51,8 +51,7 @@
                     android:id="@+id/imgPackTray"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="8dp"
-                    android:scaleType="centerInside"/>
+                    android:scaleType="centerCrop"/>
             </androidx.cardview.widget.CardView>
 
             <LinearLayout
@@ -129,21 +128,37 @@
         android:paddingBottom="40dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="gone">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAddToWa"
-            android:layout_width="match_parent"
+            android:id="@+id/btnSupportArtist"
+            android:layout_width="0dp"
             android:layout_height="60dp"
-            android:text="Add Stickers"
-            android:textSize="16sp"
+            android:layout_weight="1"
+            android:text="Support"
+            android:textSize="14sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            app:backgroundTint="#000000"
+            android:textColor="#000000"
+            app:backgroundTint="#FFD700"
             app:cornerRadius="30dp"
-            android:elevation="0dp"
             android:stateListAnimator="@null"
-            android:visibility="gone"/>
+            android:layout_marginEnd="6dp"
+            android:elevation="0dp"
+            android:visibility="gone"/> <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAddToWa"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="1"
+        android:text="Add Stickers"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        app:backgroundTint="#000000"
+        app:cornerRadius="30dp"
+        android:elevation="0dp"
+        android:layout_marginStart="6dp"
+        android:stateListAnimator="@null"/>
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
