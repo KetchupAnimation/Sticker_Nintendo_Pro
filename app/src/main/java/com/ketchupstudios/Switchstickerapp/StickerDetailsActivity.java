@@ -68,6 +68,11 @@ public class StickerDetailsActivity extends AppCompatActivity {
     private boolean isGachaPack = false;
     private Set<String> unlockedGachaStickers = new HashSet<>();
 
+    // 👇 NUEVO: Variables para los Extras 👇
+    private List<StickerPack.Sticker> combinedStickersList = new ArrayList<>();
+    private int baseStickerCount = 0;
+    private Set<String> unlockedExtras = new HashSet<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,6 +87,24 @@ public class StickerDetailsActivity extends AppCompatActivity {
         ImageView btnShare = findViewById(R.id.btnShareApp);
 
         if (Config.selectedPack != null) {
+
+            // 👇 1. FUSIÓN DE EXTRAS: Leemos los secretos y los añadimos al final de la lista 👇
+            baseStickerCount = Config.selectedPack.stickers != null ? Config.selectedPack.stickers.size() : 0;
+            combinedStickersList.clear();
+            if (Config.selectedPack.stickers != null) combinedStickersList.addAll(Config.selectedPack.stickers);
+
+            unlockedExtras = getSharedPreferences("GachaUnlocks", MODE_PRIVATE).getStringSet("extras_" + Config.selectedPack.identifier, new HashSet<>());
+
+            for (String extraImg : unlockedExtras) {
+                StickerPack.Sticker extra = new StickerPack.Sticker();
+                extra.imageFile = extraImg;
+                extra.emojis = new ArrayList<>();
+                extra.emojis.add("✨"); // WhatsApp leerá este emoji dinámico automáticamente
+                extra.emojis.add("🤩");
+                combinedStickersList.add(extra);
+            }
+            // 👆 FIN FUSIÓN 👆
+
 
             // 👇 1. DETECTAR SI ES UN PACK DEL GACHA 👇
             isGachaPack = Config.selectedPack.status != null && Config.selectedPack.status.equalsIgnoreCase("gacha");
@@ -153,8 +176,9 @@ public class StickerDetailsActivity extends AppCompatActivity {
         RecyclerView rvGrid = findViewById(R.id.rvStickersGrid);
         rvGrid.setLayoutManager(new GridLayoutManager(this, 3));
 
-        if (Config.selectedPack != null && Config.selectedPack.stickers != null) {
-            rvGrid.setAdapter(new StickerGridAdapter(Config.selectedPack.stickers));
+        // Le pasamos al adaptador la nueva lista fusionada con todo
+        if (combinedStickersList != null && !combinedStickersList.isEmpty()) {
+            rvGrid.setAdapter(new StickerGridAdapter(combinedStickersList));
         }
 
         btnAdd.setOnClickListener(v -> {
@@ -212,6 +236,7 @@ public class StickerDetailsActivity extends AppCompatActivity {
             int diaActual = position + 1;
             String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
             Glide.with(holder.itemView.getContext()).load(baseUrl + Config.selectedPack.identifier + "/" + sticker.imageFile).into(holder.image);
+
 
             // 👇 2. EL PINTADO INTELIGENTE (GACHA VS NORMAL) 👇
             if (isGachaPack) {

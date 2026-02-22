@@ -2634,11 +2634,12 @@ public class MainActivity extends AppCompatActivity {
                        JSONObject p = packs.getJSONObject(i);
                        GachaItem item = new GachaItem();
                        item.id = p.getString("id");
-                       item.type = p.getString("type");
+                       item.type = p.getString("type"); // Automáticamente leerá "extra_sticker"
                        item.title = p.getString("title");
                        item.pack_identifier = p.getString("pack_identifier");
                        item.rarity = p.getString("rarity");
                        item.colorBg = p.optString("colorBg", "#000000");
+                       item.image = p.optString("image", ""); // VITAL: Sin esto la app no sabe qué archivo descargar
 
                        // Lo metemos a la urna general de premios
                        Config.gachaWallpapersList.add(item);
@@ -2875,6 +2876,7 @@ public class MainActivity extends AppCompatActivity {
         // Se declaran AQUÍ para que todo el código debajo las reconozca correctamente
         final boolean esPremioMoneda = "coin".equals(premio.type);
         final boolean esPremioPack = "sticker_pack".equals(premio.type);
+        final boolean esPremioExtra = "extra_sticker".equals(premio.type);
         final int monedasFinales = monedasGanadas;
         final GachaItem premioFinal = premio;
 
@@ -2900,22 +2902,34 @@ public class MainActivity extends AppCompatActivity {
         TextView txtClaimBtn = rewardDialog.findViewById(R.id.txtClaimBtn);
         ImageView imgBack = rewardDialog.findViewById(R.id.imgRewardBack);
 
-        // ¿Es moneda o Wallpaper?
+        // ¿Es moneda, Pack, Extra o Wallpaper?
         if (esPremioMoneda) {
-            // Ponemos tu PNG de moneda local
             imgItem.setImageResource(R.drawable.coin_caraa);
             txtTitle.setText("YOU WON...");
             txtClaimBtn.setText("CLAIM " + monedasFinales + " COINS");
         } else if (esPremioPack) {
-            // 👇 NUEVO: Es un Pack Exclusivo 👇
-            // Usamos la ruta oficial de tu JSON para no fallar
             String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
             String imageUrl = baseUrl + premioFinal.pack_identifier + "/gacha_bg.png";
             Glide.with(this).load(imageUrl).into(imgItem);
             txtTitle.setText("EXCLUSIVE PACK!");
             txtClaimBtn.setText("OPEN PACK");
+        } else if (esPremioExtra) {
+            // 👇 NUEVO: Diseño del Sticker Extra (Con el fondo especial) 👇
+            String baseUrl = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1);
+
+            // Ponemos el fondo animado gacha_bg.png detrás del sticker
+            Glide.with(this).load(baseUrl + premioFinal.pack_identifier + "/gacha_bg.png").into(new com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                @Override
+                public void onResourceReady(@androidx.annotation.NonNull android.graphics.drawable.Drawable resource, @androidx.annotation.Nullable com.bumptech.glide.request.transition.Transition<? super android.graphics.drawable.Drawable> transition) {
+                    imgItem.setBackground(resource);
+                }
+                @Override public void onLoadCleared(@androidx.annotation.Nullable android.graphics.drawable.Drawable placeholder) {}
+            });
+            // Cargamos el sticker transparente encima
+            Glide.with(this).load(baseUrl + premioFinal.pack_identifier + "/" + premioFinal.image).into(imgItem);
+            txtTitle.setText("SECRET STICKER!");
+            txtClaimBtn.setText("CLAIM REWARD");
         } else {
-            // Descargamos el Wallpaper de GitHub normal
             String baseUrl = "https://raw.githubusercontent.com/KetchupAnimation/StickerApp-repo/main/Gacha/";
             Glide.with(this).load(baseUrl + premioFinal.image).into(imgItem);
             txtTitle.setText("YOU GOT...");
@@ -3035,7 +3049,6 @@ public class MainActivity extends AppCompatActivity {
                 actualizarMonedasUI();
                 actualizarMonedasEnNube(saldo);
 
-                // Sonido épico de monedas
                 try {
                     MediaPlayer mp = MediaPlayer.create(this, R.raw.coin);
                     if (mp != null) { mp.setOnCompletionListener(MediaPlayer::release); mp.start(); }
@@ -3044,7 +3057,6 @@ public class MainActivity extends AppCompatActivity {
                 CustomToast.makeText(this, "+" + monedasFinales + " Coins Added! 💰", Toast.LENGTH_SHORT).show();
 
             } else if (esPremioPack) {
-                // 👇 NUEVO: GUARDAR EL PACK COMO DESBLOQUEADO 👇
                 Set<String> unlockedPacks = appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>());
                 Set<String> newUnlocked = new HashSet<>(unlockedPacks);
                 newUnlocked.add(premioFinal.pack_identifier);
@@ -3056,10 +3068,30 @@ public class MainActivity extends AppCompatActivity {
                             .update("unlocked_gacha_packs", FieldValue.arrayUnion(premioFinal.pack_identifier));
                 }
 
-                // 👇 ABRIR EL MINIJUEGO DE SILUETAS 👇
                 Intent intent = new Intent(MainActivity.this, GachaUnboxActivity.class);
-                intent.putExtra("PACK_ID", premioFinal.pack_identifier); // Le pasamos el ID del pack a la nueva pantalla
+                intent.putExtra("PACK_ID", premioFinal.pack_identifier);
                 startActivity(intent);
+
+            } else if (esPremioExtra) {
+                // 👇 NUEVO: GUARDAR STICKER EXTRA EN MEMORIA 👇
+                android.content.SharedPreferences gachaPrefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE);
+                Set<String> extras = new HashSet<>(gachaPrefs.getStringSet("extras_" + premioFinal.pack_identifier, new HashSet<>()));
+                extras.add(premioFinal.image);
+                gachaPrefs.edit().putStringSet("extras_" + premioFinal.pack_identifier, extras).apply();
+
+                // Asegurar que el pack base aparezca en favoritos para que no se pierda
+                Set<String> unlockedPacks = new HashSet<>(appPrefs.getStringSet("unlocked_gacha_packs", new HashSet<>()));
+                unlockedPacks.add(premioFinal.pack_identifier);
+                appPrefs.edit().putStringSet("unlocked_gacha_packs", unlockedPacks).apply();
+
+                FirebaseUser user = mAuth.getCurrentUser();
+                if (user != null) {
+                    FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                            .update("unlocked_gacha_packs", FieldValue.arrayUnion(premioFinal.pack_identifier));
+                }
+
+                CustomToast.makeText(this, "Secret Sticker added to Favorites! 🌟", Toast.LENGTH_LONG).show();
+                fusionarYSubirDatosLocales(); // Guardar en la nube
 
             } else {
                 // GUARDAR WALLPAPER EN FAVORITOS
@@ -3082,7 +3114,6 @@ public class MainActivity extends AppCompatActivity {
                 CustomToast.makeText(this, "Saved to Favorites! 💖", Toast.LENGTH_SHORT).show();
             }
 
-            // Cierre suave (Fade Out) que ya teníamos
             if (rewardDialog.getWindow() != null) {
                 rewardDialog.getWindow().getDecorView().animate().alpha(0f).setDuration(400).withEndAction(rewardDialog::dismiss).start();
             } else {
