@@ -2,16 +2,20 @@ package com.ketchupstudios.Switchstickerapp;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,18 +25,22 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GachaUnboxActivity extends AppCompatActivity {
 
     private String packId;
-    private StickerPack currentPack;
+    public StickerPack currentPack;
     private RecyclerView recycler;
     private TextView txtCounter;
-    private LinearLayout buttonsContainer;
     private Button btnAddToWa;
-    private GachaUnboxAdapter adapter; // <--- Referencia al adaptador
-    public int unlockedCount = 0;
+
+    public int sessionUnlockedCount = 0;
+    public int maxSessionUnlocks = 3;
+    public Set<String> unlockedStickersSet;
+    private SharedPreferences prefs;
     private AlertDialog dialogCarga;
 
     @Override
@@ -47,14 +55,16 @@ public class GachaUnboxActivity extends AppCompatActivity {
             }
         }
 
+        prefs = getSharedPreferences("GachaUnlocks", MODE_PRIVATE);
+        unlockedStickersSet = new HashSet<>(prefs.getStringSet("pack_" + packId, new HashSet<>()));
+
         TextView txtTitle = findViewById(R.id.txtUnboxTitle);
         TextView txtAuthor = findViewById(R.id.txtDetailAuthor);
         ImageView imgTray = findViewById(R.id.imgPackTray);
         txtCounter = findViewById(R.id.txtUnboxCounter);
         btnAddToWa = findViewById(R.id.btnAddToWa);
-        buttonsContainer = findViewById(R.id.buttonsContainer);
-        recycler = findViewById(R.id.recyclerGachaUnbox);
         Button btnSupport = findViewById(R.id.btnSupportArtist);
+        recycler = findViewById(R.id.recyclerGachaUnbox);
 
         if (currentPack != null) {
             txtTitle.setText(currentPack.name);
@@ -64,6 +74,7 @@ public class GachaUnboxActivity extends AppCompatActivity {
             String trayUrl = baseUrl + currentPack.identifier + "/" + currentPack.trayImageFile;
             Glide.with(this).load(trayUrl).into(imgTray);
 
+            // Mostrar botón de Soporte si hay link
             if (currentPack.artistLink != null && !currentPack.artistLink.isEmpty()) {
                 btnSupport.setVisibility(View.VISIBLE);
                 btnSupport.setOnClickListener(v -> {
@@ -73,64 +84,101 @@ public class GachaUnboxActivity extends AppCompatActivity {
                         startActivity(i);
                     } catch (Exception e) {}
                 });
+            }
+
+            maxSessionUnlocks = Math.min(3, currentPack.stickers.size() - unlockedStickersSet.size());
+
+            if (maxSessionUnlocks == 0) {
+                txtCounter.setText("Pack Fully Unlocked! 🎉");
+                btnAddToWa.setVisibility(View.VISIBLE);
             } else {
-                btnSupport.setVisibility(View.GONE);
+                txtCounter.setText("Choose " + maxSessionUnlocks + " to unlock: 0/" + maxSessionUnlocks);
             }
 
             recycler.setLayoutManager(new GridLayoutManager(this, 4));
-            adapter = new GachaUnboxAdapter(this, currentPack, this);
+            GachaUnboxAdapter adapter = new GachaUnboxAdapter(this, currentPack, this, unlockedStickersSet);
             recycler.setAdapter(adapter);
         }
 
         btnAddToWa.setOnClickListener(v -> iniciarDescargaYEnvio());
     }
 
-    public void onStickerUnlocked() {
-        unlockedCount++;
-        txtCounter.setText("Choose 3 to unlock: " + unlockedCount + "/3");
-        if (unlockedCount >= 3) {
-            txtCounter.setText("Pack Unlocked! 🎉");
-            // Mostramos ambos botones de golpe
-            buttonsContainer.setVisibility(View.VISIBLE);
+    public void onStickerUnlocked(String imageFile) {
+        sessionUnlockedCount++;
+        unlockedStickersSet.add(imageFile);
+        prefs.edit().putStringSet("pack_" + packId, unlockedStickersSet).apply();
+
+        txtCounter.setText("Choose " + maxSessionUnlocks + " to unlock: " + sessionUnlockedCount + "/" + maxSessionUnlocks);
+
+        if (sessionUnlockedCount >= maxSessionUnlocks) {
+            if (unlockedStickersSet.size() == currentPack.stickers.size()) {
+                txtCounter.setText("Pack Fully Unlocked! 🎉");
+            } else {
+                txtCounter.setText("Session Unlocked! 🎉");
+            }
+            btnAddToWa.setVisibility(View.VISIBLE);
         }
+    }
+
+    public void mostrarPreviewGrande(String urlImagen) {
+        View v = getLayoutInflater().inflate(R.layout.dialog_sticker_preview, null);
+        Glide.with(this).load(urlImagen).into((ImageView) v.findViewById(R.id.imgPreviewBig));
+
+        AlertDialog d = new AlertDialog.Builder(this).setView(v).create();
+        v.setOnClickListener(view -> d.dismiss());
+
+        if (d.getWindow() != null) {
+            d.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            d.getWindow().setDimAmount(0.7f);
+        }
+
+        d.show();
+        v.setScaleX(0.5f); v.setScaleY(0.5f); v.setAlpha(0f);
+        v.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(200)
+                .setInterpolator(new OvershootInterpolator()).start();
     }
 
     private void iniciarDescargaYEnvio() {
         mostrarCargando();
         new Thread(() -> {
             try {
-                // 1. EXTRAER SOLO LOS STICKERS TOCADOS POR EL USUARIO
-                List<StickerPack.Sticker> unlockedStickers = new ArrayList<>();
-                for (int i = 0; i < currentPack.stickers.size(); i++) {
-                    if (adapter.isUnlocked[i]) {
-                        unlockedStickers.add(currentPack.stickers.get(i));
-                    }
+                // 1. Filtrar los que el usuario ya ha ganado
+                List<StickerPack.Sticker> unlockedList = new ArrayList<>();
+                for (StickerPack.Sticker s : currentPack.stickers) {
+                    if (unlockedStickersSet.contains(s.imageFile)) unlockedList.add(s);
                 }
 
-                // 2. CREAR UN MINI-PACK FALSO PARA ENGAÑAR A WHATSAPP
+                // 2. Crear pack dinámico idéntico al original pero con menos stickers
                 StickerPack waPack = new StickerPack();
                 waPack.identifier = currentPack.identifier;
                 waPack.name = currentPack.name;
                 waPack.publisher = currentPack.publisher;
                 waPack.trayImageFile = currentPack.trayImageFile;
-                waPack.stickers = unlockedStickers; // Solo van los 3 o más elegidos
+                waPack.stickers = unlockedList;
 
-                // 3. DECIRLE A LA APP QUE ESTE ES EL PACK ACTIVO
+                // 👇 EL HACK MAESTRO: Reemplazamos temporalmente el pack en la memoria global 👇
+                // Así, cuando WhatsApp lea tu ContentProvider, verá que el pack solo tiene los desbloqueados.
+                for (int i = 0; i < Config.packs.size(); i++) {
+                    if (Config.packs.get(i).identifier.equals(currentPack.identifier)) {
+                        Config.packs.set(i, waPack);
+                        break;
+                    }
+                }
                 Config.selectedPack = waPack;
 
-                // 4. DESCARGAR SOLO LOS ARCHIVOS SELECCIONADOS
+                // 3. Descargar los archivos físicos
                 File dir = new File(getFilesDir(), "stickers/" + currentPack.identifier);
                 if (!dir.exists()) dir.mkdirs();
                 String url = Config.STICKER_JSON_URL.substring(0, Config.STICKER_JSON_URL.lastIndexOf("/") + 1) + currentPack.identifier + "/";
 
                 descargarArchivo(url + currentPack.trayImageFile, new File(dir, currentPack.trayImageFile));
-                for (StickerPack.Sticker s : unlockedStickers) {
+                for (StickerPack.Sticker s : unlockedList) {
                     descargarArchivo(url + s.imageFile, new File(dir, s.imageFile));
                 }
 
                 runOnUiThread(() -> { cerrarCargando(); enviarIntentAWhatsApp(); });
             } catch (Exception e) {
-                runOnUiThread(() -> { cerrarCargando(); CustomToast.makeText(this, "Error: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show(); });
+                runOnUiThread(() -> { cerrarCargando(); Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show(); });
             }
         }).start();
     }
@@ -150,7 +198,7 @@ public class GachaUnboxActivity extends AppCompatActivity {
         intent.putExtra("sticker_pack_authority", BuildConfig.APPLICATION_ID + ".provider");
         intent.putExtra("sticker_pack_name", currentPack.name);
         try { startActivityForResult(intent, 200); }
-        catch (Exception e) { CustomToast.makeText(this, "WhatsApp not installed", android.widget.Toast.LENGTH_SHORT).show(); }
+        catch (Exception e) { Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_SHORT).show(); }
     }
 
     private void mostrarCargando() {
@@ -163,25 +211,5 @@ public class GachaUnboxActivity extends AppCompatActivity {
 
     private void cerrarCargando() {
         if (!isFinishing() && !isDestroyed() && dialogCarga != null && dialogCarga.isShowing()) dialogCarga.dismiss();
-    }
-
-
-    // 👇 NUEVO: Método para mostrar la vista previa en grande 👇
-    public void mostrarPreviewGrande(String urlImagen) {
-        View v = getLayoutInflater().inflate(R.layout.dialog_sticker_preview, null);
-        Glide.with(this).load(urlImagen).into((ImageView) v.findViewById(R.id.imgPreviewBig));
-
-        android.app.AlertDialog d = new android.app.AlertDialog.Builder(this).setView(v).create();
-        v.setOnClickListener(view -> d.dismiss());
-
-        if (d.getWindow() != null) {
-            d.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
-            d.getWindow().setDimAmount(0.7f);
-        }
-
-        d.show();
-        v.setScaleX(0.5f); v.setScaleY(0.5f); v.setAlpha(0f);
-        v.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(200)
-                .setInterpolator(new android.view.animation.OvershootInterpolator()).start();
     }
 }
